@@ -1,0 +1,9 @@
+[package]
+name    = "toolup"
+version = "0.1.0"
+license = "Apache"
+authors = ["Andrew Hunter <andrew@logicalshift.io>"]
+
+[dependencies]
+serde       = "0.9"
+serde_json  = "0.9"
