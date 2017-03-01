@@ -8,6 +8,21 @@ use serde::*;
 use serde_json::*;
 
 ///
+/// Allows a tool to be invoked using JSON input and output
+///
+/// Tools in Rust are normally implemented using strong types for convenience's
+/// sake, but an important capability is that their input and output can be
+/// easily serialized, in particular to JSON which is currently a particularly
+/// convenient format for interopability.
+///
+pub trait JsonTool {
+    ///
+    /// Invokes this tool with its input and output specified using JSON
+    ///
+    fn invoke_json(&self, input: Value) -> Result<Value, Value>;
+}
+
+///
 /// Trait implemented by things that represent a tool
 ///
 /// A tool is simply a routine that takes some input, does some processing
@@ -30,21 +45,6 @@ pub trait Tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
     /// Invokes this tool with an input data structure and returns its result
     ///
     fn invoke(&self, input: TIn) -> Result<TOut, TErr>;
-}
-
-///
-/// Allows a tool to be invoked using JSON input and output
-///
-/// Tools in Rust are normally implemented using strong types for convenience's
-/// sake, but an important capability is that their input and output can be
-/// easily serialized, in particular to JSON which is currently a particularly
-/// convenient format for interopability.
-///
-pub trait JsonTool {
-    ///
-    /// Invokes this tool with its input and output specified using JSON
-    ///
-    fn invoke_json(&self, input: Value) -> Result<Value, Value>;
 }
 
 impl<TIn, TOut, TErr> JsonTool for Tool<TIn, TOut, TErr> 
@@ -109,7 +109,7 @@ mod test {
         input: i32
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, PartialEq, Eq)]
     struct TestOut {
         output: i32
     }
@@ -119,6 +119,14 @@ mod test {
         fn invoke(&self, x: TestIn) -> Result<TestOut, ()> {
             Ok(TestOut { output: x.input+1 })
         }
+    }
+
+    #[test]
+    fn can_call_tool() {
+        let tool = InputOutput {};
+        let result = tool.invoke(TestIn { input: 4 });
+
+        assert!(result == Ok(TestOut { output: 5 }));
     }
 
     #[test]
