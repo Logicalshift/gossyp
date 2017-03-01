@@ -40,14 +40,14 @@ pub trait Tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
 /// easily serialized, in particular to JSON which is currently a particularly
 /// convenient format for interopability.
 ///
-pub trait ToolJson {
+pub trait JsonTool {
     ///
     /// Invokes this tool with its input and output specified using JSON
     ///
     fn invoke_json(&self, input: Value) -> Result<Value, Value>;
 }
 
-impl<TIn, TOut, TErr> ToolJson for Tool<TIn, TOut, TErr> 
+impl<TIn, TOut, TErr> JsonTool for Tool<TIn, TOut, TErr> 
 where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
     fn invoke_json(&self, input: Value) -> Result<Value, Value> {
         // Decode
