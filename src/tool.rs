@@ -89,7 +89,7 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
             Err(input_error) => {
                 // Input does not match the format expected by the tool
                 Err(json![{
-                    "error":        "JSON decode failed",
+                    "error":        "JSON input decode failed",
                     "description":  input_error.description(),
                 }])
             }
