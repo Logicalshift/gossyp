@@ -96,3 +96,36 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::result::Result;
+    use serde::*;
+    use serde_json::*;
+
+    #[derive(Serialize, Deserialize)]
+    struct TestIn {
+        input: i32
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct TestOut {
+        output: i32
+    }
+
+    struct InputOutput { }
+    impl Tool<TestIn, TestOut, ()> for InputOutput {
+        fn invoke(&self, x: TestIn) -> Result<TestOut, ()> {
+            Ok(TestOut { output: x.input+1 })
+        }
+    }
+
+    #[test]
+    fn can_call_tool_via_json_interface() {
+        let tool = InputOutput {};
+        let result = tool.invoke_json(json![{ "input": 4 }]);
+
+        assert!(result == Ok(json![{ "output": 5 }]));
+    }
+}
