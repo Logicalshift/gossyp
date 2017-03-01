@@ -1,3 +1,4 @@
+use std::error::Error;
 use tool::*;
 
 ///
@@ -11,5 +12,5 @@ pub trait Environment {
     ///
     /// Retrieves a tool using a JSON interface by name
     ///
-    fn get_json_tool<'a>(&self, name: &str) -> Result<&'a JsonTool, Error>;
+    fn get_json_tool<'a>(&self, name: &str) -> Result<&'a JsonTool, &Error>;
 }
