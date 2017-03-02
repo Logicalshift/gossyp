@@ -39,6 +39,9 @@ pub struct FnTool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
     function: Box<Fn(TIn) -> Result<TOut, TErr>>
 }
 
+///
+/// Creates a Tool from a function
+///
 pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
     FnTool { function: Box::new(function) }
 }
