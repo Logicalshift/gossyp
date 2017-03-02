@@ -25,7 +25,7 @@ use serde_json::*;
 /// actual code. Tools can be turned into stand-alone command line programs or
 /// web endpoints with no modification.
 ///
-pub trait JsonTool {
+pub trait Tool {
     ///
     /// Invokes this tool with its input and output specified using JSON
     ///
@@ -46,7 +46,7 @@ pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+
     FnTool { function: Box::new(function) }
 }
 
-impl<TIn, TOut, TErr> JsonTool for FnTool<TIn, TOut, TErr> 
+impl<TIn, TOut, TErr> Tool for FnTool<TIn, TOut, TErr> 
 where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
     fn invoke_json(&self, input: Value) -> Result<Value, Value> {
         // Decode
