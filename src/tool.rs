@@ -8,21 +8,6 @@ use serde::*;
 use serde_json::*;
 
 ///
-/// Allows a tool to be invoked using JSON input and output
-///
-/// Tools in Rust are normally implemented using strong types for convenience's
-/// sake, but an important capability is that their input and output can be
-/// easily serialized, in particular to JSON which is currently a particularly
-/// convenient format for interopability.
-///
-pub trait JsonTool {
-    ///
-    /// Invokes this tool with its input and output specified using JSON
-    ///
-    fn invoke_json(&self, input: Value) -> Result<Value, Value>;
-}
-
-///
 /// Trait implemented by things that represent a tool
 ///
 /// A tool is simply a routine that takes some input, does some processing
@@ -40,14 +25,25 @@ pub trait JsonTool {
 /// actual code. Tools can be turned into stand-alone command line programs or
 /// web endpoints with no modification.
 ///
-pub trait Tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
+pub trait JsonTool {
     ///
-    /// Invokes this tool with an input data structure and returns its result
+    /// Invokes this tool with its input and output specified using JSON
     ///
-    fn invoke(&self, input: TIn) -> Result<TOut, TErr>;
+    fn invoke_json(&self, input: Value) -> Result<Value, Value>;
 }
 
-impl<TIn, TOut, TErr> JsonTool for Tool<TIn, TOut, TErr> 
+///
+/// Represents a tool made from a function
+///
+pub struct FnTool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
+    function: Box<Fn(TIn) -> Result<TOut, TErr>>
+}
+
+pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+    FnTool { function: Box::new(function) }
+}
+
+impl<TIn, TOut, TErr> JsonTool for FnTool<TIn, TOut, TErr> 
 where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
     fn invoke_json(&self, input: Value) -> Result<Value, Value> {
         // Decode
@@ -57,7 +53,7 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
         match input_decoded {
             Ok(input_decoded) => {
                 // Successfully decoded as the tool's input format
-                let result = self.invoke(input_decoded);
+                let result = (self.function)(input_decoded);
 
                 // Encode the error or the result
                 // The encoding can go wrong, and we need to handle it slightly differently for the error or the success case
@@ -101,8 +97,6 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
 mod test {
     use super::*;
     use std::result::Result;
-    use serde::*;
-    use serde_json::*;
 
     #[derive(Serialize, Deserialize)]
     struct TestIn {
@@ -114,24 +108,13 @@ mod test {
         output: i32
     }
 
-    struct InputOutput { }
-    impl Tool<TestIn, TestOut, ()> for InputOutput {
-        fn invoke(&self, x: TestIn) -> Result<TestOut, ()> {
-            Ok(TestOut { output: x.input+1 })
-        }
-    }
-
-    #[test]
-    fn can_call_tool() {
-        let tool = InputOutput {};
-        let result = tool.invoke(TestIn { input: 4 });
-
-        assert!(result == Ok(TestOut { output: 5 }));
+    fn test_tool(x: TestIn) -> Result<TestOut, ()> {
+        Ok(TestOut { output: x.input + 1 })
     }
 
     #[test]
     fn can_call_tool_via_json_interface() {
-        let tool = InputOutput {};
+        let tool = make_tool(test_tool);
         let result = tool.invoke_json(json![{ "input": 4 }]);
 
         assert!(result == Ok(json![{ "output": 5 }]));
