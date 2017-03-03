@@ -3,6 +3,7 @@
 //!
 
 use std::result::Result;
+use std::rc::Rc;
 use std::error::Error;
 use serde::*;
 use serde_json::*;
@@ -95,6 +96,20 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
                 }])
             }
         }
+    }
+}
+
+impl<T: Tool> Tool for Rc<T> {
+    #[inline]
+    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
+        (**self).invoke_json(input, environment)
+    }
+}
+
+impl<T: Tool> Tool for Box<T> {
+    #[inline]
+    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
+        (**self).invoke_json(input, environment)
     }
 }
 
