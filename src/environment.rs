@@ -11,7 +11,7 @@ pub trait Environment {
     ///
     /// Retrieves a tool using a JSON interface by name
     ///
-    fn get_json_tool<'a>(&self, name: &str) -> Result<&'a Tool, RetrieveToolError>;
+    fn get_json_tool(&self, name: &str) -> Result<Box<Tool>, RetrieveToolError>;
 }
 
 ///
@@ -82,7 +82,7 @@ impl EmptyEnvironment {
 }
 
 impl Environment for EmptyEnvironment {
-    fn get_json_tool<'a>(&self, _name: &str) -> Result<&'a Tool, RetrieveToolError> {
+    fn get_json_tool(&self, _name: &str) -> Result<Box<Tool>, RetrieveToolError> {
         Err(RetrieveToolError::not_found())
     }
 }
