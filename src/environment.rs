@@ -1,4 +1,3 @@
-use std::error::Error;
 use tool::*;
 
 ///
@@ -12,5 +11,78 @@ pub trait Environment {
     ///
     /// Retrieves a tool using a JSON interface by name
     ///
-    fn get_json_tool<'a>(&self, name: &str) -> Result<&'a Tool, &Error>;
+    fn get_json_tool<'a>(&self, name: &str) -> Result<&'a Tool, RetrieveToolError>;
+}
+
+///
+/// The reason an environment retrieve failed
+///
+#[derive(Copy, Clone)]
+pub enum RetrieveFailReason {
+    /// Reason not listed in this enum
+    Generic,
+
+    /// A tool could not be found
+    NotFound,
+}
+
+///
+/// Represents an error that occurred during a request to retrieve a tool
+///
+pub struct RetrieveToolError {
+    /// The reason the failure occurred
+    reason: RetrieveFailReason,
+
+    /// A human-readable message associated with this error
+    msg: String
+}
+
+impl RetrieveToolError {
+    ///
+    /// Creates a new error
+    ///
+    pub fn new(message: &str) -> RetrieveToolError {
+        RetrieveToolError { reason: RetrieveFailReason::Generic, msg: String::from(message) }
+    }
+
+    ///
+    /// Creates a 'tool not found' error
+    ///
+    pub fn not_found() -> RetrieveToolError {
+        RetrieveToolError { reason: RetrieveFailReason::NotFound, msg: String::from("Tool not found") }
+    }
+
+    ///
+    /// Retrieves the message for an error
+    ///
+    pub fn message<'a>(&'a self) -> &'a str {
+        &self.msg
+    }
+
+    ///
+    /// Retrieves the reason attached to this failure
+    ///
+    pub fn reason(&self) -> RetrieveFailReason {
+        self.reason
+    }
+}
+
+///
+/// Represents an environment containing no tools
+///
+pub struct EmptyEnvironment { }
+
+impl EmptyEnvironment {
+    ///
+    /// Creates a new empty environment
+    ///
+    pub fn new() -> EmptyEnvironment {
+        EmptyEnvironment { }
+    }
+}
+
+impl Environment for EmptyEnvironment {
+    fn get_json_tool<'a>(&self, _name: &str) -> Result<&'a Tool, RetrieveToolError> {
+        Err(RetrieveToolError::not_found())
+    }
 }

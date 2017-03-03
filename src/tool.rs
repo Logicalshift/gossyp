@@ -7,6 +7,8 @@ use std::error::Error;
 use serde::*;
 use serde_json::*;
 
+use environment::*;
+
 ///
 /// Trait implemented by things that represent a tool
 ///
@@ -29,7 +31,7 @@ pub trait Tool {
     ///
     /// Invokes this tool with its input and output specified using JSON
     ///
-    fn invoke_json(&self, input: Value) -> Result<Value, Value>;
+    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value>;
 }
 
 ///
@@ -48,7 +50,7 @@ pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+
 
 impl<TIn, TOut, TErr> Tool for FnTool<TIn, TOut, TErr> 
 where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
-    fn invoke_json(&self, input: Value) -> Result<Value, Value> {
+    fn invoke_json(&self, input: Value, _environment: &Environment) -> Result<Value, Value> {
         // Decode
         let input_decoded = from_value::<TIn>(input);
 
@@ -117,8 +119,9 @@ mod test {
 
     #[test]
     fn can_call_tool_via_json_interface() {
-        let tool = make_tool(test_tool);
-        let result = tool.invoke_json(json![{ "input": 4 }]);
+        let tool        = make_tool(test_tool);
+        let environment = EmptyEnvironment::new();
+        let result      = tool.invoke_json(json![{ "input": 4 }], &environment);
 
         assert!(result == Ok(json![{ "output": 5 }]));
     }
