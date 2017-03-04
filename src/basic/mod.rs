@@ -11,3 +11,4 @@ pub use self::toolset::*;
 pub use self::basic_toolset::*;
 pub use self::empty_environment::*;
 pub use self::static_environment::*;
+pub use self::list_tools::*;
