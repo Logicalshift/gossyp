@@ -17,7 +17,7 @@ pub trait Environment {
 ///
 /// The reason an environment retrieve failed
 ///
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum RetrieveFailReason {
     /// Reason not listed in this enum
     Generic,
@@ -29,6 +29,7 @@ pub enum RetrieveFailReason {
 ///
 /// Represents an error that occurred during a request to retrieve a tool
 ///
+#[derive(Debug)]
 pub struct RetrieveToolError {
     /// The reason the failure occurred
     reason: RetrieveFailReason,
