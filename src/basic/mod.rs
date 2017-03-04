@@ -3,6 +3,8 @@ pub mod toolset;
 pub mod basic_toolset;
 pub mod empty_environment;
 pub mod static_environment;
+pub mod tool_name;
+pub mod list_tools;
 
 pub use self::functional_tool::*;
 pub use self::toolset::*;
