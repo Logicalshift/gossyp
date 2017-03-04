@@ -35,8 +35,12 @@ impl<TToolSet: ToolSet> ToolSet for ToolSetWithList<TToolSet> {
             names.push(String::from(tool.get_name()));
         }
 
-        // Create the list-tools tool
+        // Names will include list-tools, and should have no duplicates
         names.push(String::from(super::tool_name::list_tools));
+        names.sort();
+        names.dedup();
+
+        // Create the list-tools tool
         let list_tools = make_pure_tool(move |_: ()| { ListToolsResult { names: names.clone() } });
 
         result.push(Box::new((super::tool_name::list_tools, list_tools)));
