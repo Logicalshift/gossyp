@@ -66,6 +66,7 @@ mod test {
     use super::*;
     use super::super::functional_tool::*;
     use super::super::empty_environment::*;
+    use super::super::basic_toolset::*;
 
     #[test]
     fn can_get_tool_by_name() {
