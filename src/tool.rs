@@ -115,8 +115,10 @@ impl<T: Tool> Tool for Box<T> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::super::*;
+    use super::super::basic::*;
     use std::result::Result;
+    use serde_json::*;
 
     #[derive(Serialize, Deserialize)]
     struct TestIn {
