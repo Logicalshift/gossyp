@@ -288,6 +288,24 @@ mod test {
     }
 
     #[test]
+    fn can_redefine_tool() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Initially there is no tool with this name...
+        assert!(dynamic_env.get_json_tool("test").is_err());
+
+        // Define a new tool, then redefine it
+        dynamic_env.define("test", Box::new(make_pure_tool(|x: i32| x+1)));
+        dynamic_env.define("test", Box::new(make_pure_tool(|x: i32| x+2)));
+
+        // Should now exist
+        let new_tool = dynamic_env.get_typed_tool("test");
+        assert!(new_tool.is_ok());
+        assert!(new_tool.unwrap().invoke(2, &dynamic_env) == Ok(4));
+    }
+
+    #[test]
     fn can_undefine_tool() {
         // Create a dynamic environment
         let dynamic_env = DynamicEnvironment::new();
