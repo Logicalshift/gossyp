@@ -1,3 +1,7 @@
+//!
+//! A static environment is used to store a fixed set of tools.
+//!
+
 use std::sync::Arc;
 use std::collections::HashMap;
 use std::result::Result;
@@ -8,7 +12,7 @@ use super::super::environment::*;
 use super::toolset::*;
 
 ///
-/// A static environment just contains a set of tools
+/// A static environment just contains a fixed set of tools
 ///
 pub struct StaticEnvironment {
     /// The tools in this environment
