@@ -11,26 +11,33 @@ use super::super::environment::*;
 /// Represents a tool made from a function
 ///
 pub struct FnTool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
-    function: Box<Fn(TIn) -> Result<TOut, TErr> + Send + Sync>
+    function: Box<Fn(TIn, &Environment) -> Result<TOut, TErr> + Send + Sync>
+}
+
+///
+/// Creates a Tool from a function that can produce an error and uses an environment
+///
+pub fn make_dynamic_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+    FnTool { function: Box::new(function) }
 }
 
 ///
 /// Creates a Tool from a function that can produce an error but does not use an environment
 ///
 pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
-    FnTool { function: Box::new(function) }
+    make_dynamic_tool(move |input, _| function(input))
 }
 
 ///
 /// Creates a Tool from a function that cannot produce an error and doesn't use an environment
 ///
 pub fn make_pure_tool<TIn: Deserialize, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
-    make_tool(move |input| { Ok(function(input)) })
+    make_dynamic_tool(move |input, _| Ok(function(input)))
 }
 
 impl<TIn, TOut, TErr> Tool for FnTool<TIn, TOut, TErr> 
 where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
-    fn invoke_json(&self, input: Value, _environment: &Environment) -> Result<Value, Value> {
+    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
         // Decode
         let input_decoded = from_value::<TIn>(input);
 
@@ -38,7 +45,7 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
         match input_decoded {
             Ok(input_decoded) => {
                 // Successfully decoded as the tool's input format
-                let result = (self.function)(input_decoded);
+                let result = (self.function)(input_decoded, environment);
 
                 // Encode the error or the result
                 // The encoding can go wrong, and we need to handle it slightly differently for the error or the success case
