@@ -39,10 +39,3 @@ impl<T: Tool> Tool for Rc<T> {
         (**self).invoke_json(input, environment)
     }
 }
-
-impl<T: Tool> Tool for Box<T> {
-    #[inline]
-    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
-        (**self).invoke_json(input, environment)
-    }
-}
