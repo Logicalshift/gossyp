@@ -81,17 +81,21 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
 ///
 /// Represents a tool with Rust types
 ///
-pub struct TypedTool<'a, TIn: Serialize, TOut: Deserialize> {
+pub struct TypedTool<TIn: Serialize, TOut: Deserialize> {
     param1: PhantomData<TIn>,
     param2: PhantomData<TOut>,
-    tool: &'a Tool
+    tool: Box<Tool>
+
+    // tool could be &'a Tool and it would work as Box<Tool> implements Tool - except rust's deref behaviour 
+    // gets in the way: trying to pass a reference to a box actually passes a reference to the boxed thing, which 
+    // then doesn't work because the size is unknown
 }
 
-impl<'a, TIn: Serialize, TOut: Deserialize> TypedTool<'a, TIn, TOut> {
+impl<TIn: Serialize, TOut: Deserialize> TypedTool<TIn, TOut> {
     ///
     /// Creates an object that can be used to invoke a tool with typed parameters instead of pure JSON
     ///
-    pub fn from(tool: &'a Tool) -> TypedTool<'a, TIn, TOut> {
+    pub fn from(tool: Box<Tool>) -> TypedTool<TIn, TOut> {
         TypedTool { param1: PhantomData, param2: PhantomData, tool: tool }
     }
 
@@ -133,6 +137,25 @@ impl<'a, TIn: Serialize, TOut: Deserialize> TypedTool<'a, TIn, TOut> {
     }
 }
 
+///
+/// Extension trait for environments that makes it possible to get a Rust typed tool immediately
+///
+pub trait TypedEnvironment {
+    ///
+    /// Retrieves a tool using a Rust interface by name
+    ///
+    fn get_typed_tool<'a, TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError>;
+}
+
+impl<TEnv> TypedEnvironment for TEnv where TEnv: Environment {
+    ///
+    /// Retrieves a tool using a Rust interface by name
+    ///
+    fn get_typed_tool<'a, TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError> {
+        self.get_json_tool(name).map(|tool| TypedTool::from(tool))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::super::super::*;
@@ -168,7 +191,7 @@ mod test {
         let tool        = make_pure_tool(|x: i32| { x+1 });
         let environment = EmptyEnvironment::new();
 
-        let typed_tool  = TypedTool::from(&tool);
+        let typed_tool  = TypedTool::from(Box::new(tool));
         let result      = typed_tool.invoke(4, &environment);
 
         assert!(result == Ok(5));
