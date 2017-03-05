@@ -1,4 +1,4 @@
-use std::rc::*;
+use std::sync::Arc;
 use std::collections::HashMap;
 use std::result::Result;
 use serde_json::*;
@@ -12,7 +12,7 @@ use super::toolset::*;
 ///
 pub struct StaticEnvironment {
     /// The tools in this environment
-    tools: HashMap<String, Rc<Box<NamedTool>>>
+    tools: HashMap<String, Arc<Box<NamedTool>>>
 }
 
 ///
@@ -20,7 +20,7 @@ pub struct StaticEnvironment {
 ///
 struct StaticEnvironmentTool {
     /// Reference to the tool within the environment
-    tool: Rc<Box<NamedTool>>
+    tool: Arc<Box<NamedTool>>
 }
 
 impl Tool for StaticEnvironmentTool {
@@ -54,7 +54,7 @@ impl StaticEnvironment {
         for tool in tools {
             let name = String::from(tool.get_name());
             
-            tool_hash.insert(name, Rc::new(tool));
+            tool_hash.insert(name, Arc::new(tool));
         }
 
         StaticEnvironment { tools: tool_hash }
