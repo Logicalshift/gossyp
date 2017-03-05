@@ -183,6 +183,7 @@ impl DynamicEnvironment {
 
         // We also define define-tool and list-tools in a dynamic environment
         defined_names.push(String::from(super::tool_name::DEFINE_TOOL));
+        defined_names.push(String::from(super::tool_name::UNDEFINE_TOOL));
         defined_names.push(String::from(super::tool_name::LIST_TOOLS));
 
         // Remove duplicates
@@ -267,7 +268,7 @@ mod test {
         let list_tools  = env.get_typed_tool("list-tools").unwrap();
         let list_result = list_tools.invoke((), &env);
 
-        assert!(list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools" ])));
+        assert!(list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools", "undefine-tool" ])));
     }
 
     #[test]
@@ -503,7 +504,7 @@ mod test {
 
         // List is initially just the two tools
         let initial_list_result = list_tools.invoke((), &dynamic_env);
-        assert!(initial_list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools" ])));
+        assert!(initial_list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools", "undefine-tool" ])));
 
         // Then a static environment to copy our tool from
         let new_env     = StaticEnvironment::from_toolset(BasicToolSet::from(vec![
@@ -520,6 +521,6 @@ mod test {
 
         // Should now be in the list
         let final_list_result = list_tools.invoke((), &dynamic_env);
-        assert!(final_list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools", "new-tool" ])));
+        assert!(final_list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools", "new-tool", "undefine-tool" ])));
     }
 }
