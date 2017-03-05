@@ -133,51 +133,6 @@ impl<'a, TIn: Serialize, TOut: Deserialize> TypedTool<'a, TIn, TOut> {
     }
 }
 
-    /* -- Would like to be able to do this too, but can't figure out how to get the type system to accept it
-///
-/// Makes a function that can be called to invoke a particular tool
-///
-pub fn make_fn_from_tool<'a, TIn, TOut, F>(tool: &'a Tool) -> Box<F> 
-where
-    TIn: Serialize,
-    TOut: Deserialize,
-    F: Fn(TIn, &Environment) -> Result<TOut, Value> {
-    Box::new(move |input: TIn, environment: &Environment| {
-        let json_input = to_value(input);
-
-        match json_input {
-            Ok(json_input) => {
-                let json_output = tool.invoke_json(json_input, environment);
-
-                match json_output {
-                    Ok(json_output) => {
-                        let result = from_value::<TOut>(json_output);
-                        match result {
-                            Ok(final_value) => Ok(final_value),
-                            Err(erm)        => Err(json![{
-                                "error":        "Result decode failed",
-                                "description":  erm.description()
-                            }])
-                        }
-                    },
-
-                    Err(json_error) => {
-                        Err(json_error)
-                    }
-                }
-            },
-
-            Err(erm) => {
-                Err(json![{
-                    "error":        "Input encode failed",
-                    "description":  erm.description()
-                }])
-            }
-        }
-    })
-}
-    */
-
 #[cfg(test)]
 mod test {
     use super::super::super::*;
