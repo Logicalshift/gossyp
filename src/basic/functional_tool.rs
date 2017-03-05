@@ -1,4 +1,5 @@
 use std::result::Result;
+use std::marker::PhantomData;
 use std::error::Error;
 use serde::*;
 use serde_json::*;
@@ -77,6 +78,106 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
     }
 }
 
+///
+/// Represents a tool with Rust types
+///
+pub struct TypedTool<'a, TIn: Serialize, TOut: Deserialize> {
+    param1: PhantomData<TIn>,
+    param2: PhantomData<TOut>,
+    tool: &'a Tool
+}
+
+impl<'a, TIn: Serialize, TOut: Deserialize> TypedTool<'a, TIn, TOut> {
+    ///
+    /// Creates an object that can be used to invoke a tool with typed parameters instead of pure JSON
+    ///
+    pub fn from(tool: &'a Tool) -> TypedTool<'a, TIn, TOut> {
+        TypedTool { param1: PhantomData, param2: PhantomData, tool: tool }
+    }
+
+    ///
+    /// Invokes this tool
+    ///
+    pub fn invoke(&self, input: TIn, environment: &Environment) -> Result<TOut, Value> {
+        let json_input = to_value(input);
+
+        match json_input {
+            Ok(json_input) => {
+                let json_output = self.tool.invoke_json(json_input, environment);
+
+                match json_output {
+                    Ok(json_output) => {
+                        let result = from_value::<TOut>(json_output);
+                        match result {
+                            Ok(final_value) => Ok(final_value),
+                            Err(erm)        => Err(json![{
+                                "error":        "Result decode failed",
+                                "description":  erm.description()
+                            }])
+                        }
+                    },
+
+                    Err(json_error) => {
+                        Err(json_error)
+                    }
+                }
+            },
+
+            Err(erm) => {
+                Err(json![{
+                    "error":        "Input encode failed",
+                    "description":  erm.description()
+                }])
+            }
+        }
+    }
+}
+
+    /* -- Would like to be able to do this too, but can't figure out how to get the type system to accept it
+///
+/// Makes a function that can be called to invoke a particular tool
+///
+pub fn make_fn_from_tool<'a, TIn, TOut, F>(tool: &'a Tool) -> Box<F> 
+where
+    TIn: Serialize,
+    TOut: Deserialize,
+    F: Fn(TIn, &Environment) -> Result<TOut, Value> {
+    Box::new(move |input: TIn, environment: &Environment| {
+        let json_input = to_value(input);
+
+        match json_input {
+            Ok(json_input) => {
+                let json_output = tool.invoke_json(json_input, environment);
+
+                match json_output {
+                    Ok(json_output) => {
+                        let result = from_value::<TOut>(json_output);
+                        match result {
+                            Ok(final_value) => Ok(final_value),
+                            Err(erm)        => Err(json![{
+                                "error":        "Result decode failed",
+                                "description":  erm.description()
+                            }])
+                        }
+                    },
+
+                    Err(json_error) => {
+                        Err(json_error)
+                    }
+                }
+            },
+
+            Err(erm) => {
+                Err(json![{
+                    "error":        "Input encode failed",
+                    "description":  erm.description()
+                }])
+            }
+        }
+    })
+}
+    */
+
 #[cfg(test)]
 mod test {
     use super::super::super::*;
@@ -105,5 +206,16 @@ mod test {
         let result      = tool.invoke_json(json![{ "input": 4 }], &environment);
 
         assert!(result == Ok(json![{ "output": 5 }]));
+    }
+
+    #[test]
+    fn can_call_tool_via_typed_interface() {
+        let tool        = make_pure_tool(|x: i32| { x+1 });
+        let environment = EmptyEnvironment::new();
+
+        let typed_tool  = TypedTool::from(&tool);
+        let result      = typed_tool.invoke(4, &environment);
+
+        assert!(result == Ok(5));
     }
 }
