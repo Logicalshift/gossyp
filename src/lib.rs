@@ -76,6 +76,13 @@
 //! With the right collection of tools, this layer can be kept comparatively simple - making it possible to
 //! quickly create large applications.
 //!
+//! # Why use it?
+//!
+//! It's much easier to maintain smaller programs than larger ones. This library provides an isolation mechanism
+//! that can be used to ensure that small programs stay small. It provides what's intended to be a bare minimum
+//! way for programs to communicate. This makes it easier to build larger programs out of smaller ones and also
+//! makes it easier to maintain and change larger programs.
+//!
 
 extern crate serde;
 extern crate serde_json;
