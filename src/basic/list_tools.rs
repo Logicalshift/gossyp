@@ -2,9 +2,20 @@ use super::toolset::*;
 use super::functional_tool::*;
 use super::super::environment::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct ListToolsResult {
-    names: Vec<String>
+    pub names: Vec<String>
+}
+
+impl ListToolsResult {
+    ///
+    /// Creates a new list tools result with a particular set of names
+    ///
+    pub fn with_names(names: Vec<&str>) -> ListToolsResult {
+        ListToolsResult {
+            names: names.iter().map(|s| String::from(*s)).collect()
+        }
+    }
 }
 
 ///
@@ -56,6 +67,7 @@ mod test {
     use super::super::empty_environment::*;
     use super::super::static_environment::*;
     use super::super::basic_toolset::*;
+    use super::super::functional_tool::*;
 
     #[test]
     fn can_list_tools() {
@@ -66,10 +78,10 @@ mod test {
         let withlist    = add_list_to_toolset(toolset);
         let environment = StaticEnvironment::from_toolset(withlist, &EmptyEnvironment::new());
 
-        let list_tool   = environment.get_json_tool("list-tools").unwrap();
-        let list_result = list_tool.invoke_json(json![ () ], &environment);
+        let list_tool   = environment.get_typed_tool("list-tools").unwrap();
+        let list_result = list_tool.invoke((), &environment);
 
-        assert!(list_result == Ok(json![{ "names": [ "add-1", "add-2", "list-tools" ] }]))
+        assert!(list_result == Ok(ListToolsResult::with_names(vec!["add-1", "add-2", "list-tools"])));
     }
 
     #[test]
@@ -82,9 +94,9 @@ mod test {
         let withlist    = add_list_to_toolset(toolset);
         let environment = StaticEnvironment::from_toolset(withlist, &EmptyEnvironment::new());
 
-        let list_tool   = environment.get_json_tool("list-tools").unwrap();
-        let list_result = list_tool.invoke_json(json![ () ], &environment);
+        let list_tool   = environment.get_typed_tool("list-tools").unwrap();
+        let list_result = list_tool.invoke((), &environment);
 
-        assert!(list_result == Ok(json![{ "names": [ "add-1", "add-2", "list-tools" ] }]))
+        assert!(list_result == Ok(ListToolsResult::with_names(vec!["add-1", "add-2", "list-tools"])));
     }
 }
