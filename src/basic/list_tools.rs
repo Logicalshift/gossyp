@@ -16,6 +16,15 @@ impl ListToolsResult {
             names: names.iter().map(|s| String::from(*s)).collect()
         }
     }
+
+    ///
+    /// Creates a new list tools result with a particular set of names
+    ///
+    pub fn with_name_strings(names: Vec<String>) -> ListToolsResult {
+        ListToolsResult {
+            names: names
+        }
+    }
 }
 
 ///
