@@ -3,7 +3,6 @@
 //!
 
 use std::result::Result;
-use std::rc::Rc;
 use serde_json::*;
 
 use environment::*;
@@ -31,11 +30,4 @@ pub trait Tool {
     /// Invokes this tool with its input and output specified using JSON
     ///
     fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value>;
-}
-
-impl<T: Tool> Tool for Rc<T> {
-    #[inline]
-    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
-        (**self).invoke_json(input, environment)
-    }
 }
