@@ -138,7 +138,7 @@ mod test {
     use super::super::super::*;
     use super::super::*;
     use std::result::Result;
-    use serde_json::*;
+    use serde_json::*;              // Rust says unused, but the json! macro will not work without this
 
     #[derive(Serialize, Deserialize)]
     struct TestIn {

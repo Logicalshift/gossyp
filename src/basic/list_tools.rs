@@ -51,9 +51,8 @@ impl<TToolSet: ToolSet> ToolSet for ToolSetWithList<TToolSet> {
 
 #[cfg(test)]
 mod test {
-    use serde_json::*;
+    use serde_json::*;              // Rust says unused but the json! macro won't work without this
     use super::*;
-    use super::super::functional_tool::*;
     use super::super::empty_environment::*;
     use super::super::static_environment::*;
     use super::super::basic_toolset::*;
@@ -64,10 +63,10 @@ mod test {
             ("add-1", make_pure_tool(|x: i32| { x+1 })),
             ("add-2", make_pure_tool(|x: i32| { x+2 }))
         ]);
-        let withlist = add_list_to_toolset(toolset);
+        let withlist    = add_list_to_toolset(toolset);
         let environment = StaticEnvironment::from_toolset(withlist, &EmptyEnvironment::new());
 
-        let list_tool = environment.get_json_tool("list-tools").unwrap();
+        let list_tool   = environment.get_json_tool("list-tools").unwrap();
         let list_result = list_tool.invoke_json(json![ () ], &environment);
 
         assert!(list_result == Ok(json![{ "names": [ "add-1", "add-2", "list-tools" ] }]))
@@ -80,10 +79,10 @@ mod test {
             ("add-1", make_pure_tool(|x: i32| { x+1 })),
             ("add-2", make_pure_tool(|x: i32| { x+2 }))
         ]);
-        let withlist = add_list_to_toolset(toolset);
+        let withlist    = add_list_to_toolset(toolset);
         let environment = StaticEnvironment::from_toolset(withlist, &EmptyEnvironment::new());
 
-        let list_tool = environment.get_json_tool("list-tools").unwrap();
+        let list_tool   = environment.get_json_tool("list-tools").unwrap();
         let list_result = list_tool.invoke_json(json![ () ], &environment);
 
         assert!(list_result == Ok(json![{ "names": [ "add-1", "add-2", "list-tools" ] }]))
