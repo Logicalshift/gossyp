@@ -523,4 +523,19 @@ mod test {
         let final_list_result = list_tools.invoke((), &dynamic_env);
         assert!(final_list_result == Ok(ListToolsResult::with_names(vec![ "define-tool", "list-tools", "new-tool", "undefine-tool" ])));
     }
+
+    #[test]
+    fn undefining_define_removes_from_the_list() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Should exist
+        assert!(dynamic_env.get_json_tool("define-tool").is_ok());
+
+        // Undefine it, check that it no longer exists
+        dynamic_env.undefine("define-tool");
+        assert!(dynamic_env.get_json_tool("define-tool").is_err());
+
+        assert!(dynamic_env.list_tools() == ListToolsResult::with_names(vec![ "list-tools", "undefine-tool" ]))
+    }
 }
