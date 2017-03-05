@@ -1,33 +1,36 @@
 //!
-//! This is a base library for a simple software architecture designed to make it easy to create large
-//! applications by combining small tools. The idea is nothing new: it's a core idea behind UNIX, component
-//! libraries like COM+ and more recently microservices. This version is based around Rust and JSON, and it's
-//! intended to strip the idea down to its bare essentials.
+//! This is a library for building small tools that can be composed into bigger pieces of software.
 //!
-//! When we learn to program, we're trained on small example programs because those are easy to write and
-//! assess. Useful software, however, tends to be much larger and trying to apply the skills obtained through
-//! writing smaller pieces of software has a tendency to result in a bit of a mess. A big issue is that the
-//! high degree of coupling found in large pieces of software makes it difficult to change design descisions
-//! made early on. This library provides a really very simple structure that can be used to build large
-//! programs out of small parts.
-//!
-//! There are three parts to this architecture:
+//! There are three main concepts behind it:
 //!
 //! ## Tools
 //!
-//! Tools are small programs that perform a single task. They take input (in the form of a JSON object) and
-//! generate an output (also in the form of a JSON object). They can be invoked with no initialisation. In 
-//! general, they run immediately, perform their task on their input and return immediately.
+//! Tools are simply small programs that perform a single task. They accept a single piece of input,
+//! in the form of a JSON object and produce a single piece of output in the form of another JSON object.
 //!
-//! This design makes it easy to compose tools: feed the input of one into another. The input and output of
-//! a tool is easy to understand and can be used to invoke it within the same process, within a different
-//! process or even over the network. Tools are an excellent target for tests: for many tools, a test
-//! requires no code: just the input JSON and the expected output JSON.
+//! Tools can be chained together simply by passing the output of one into the input of another. As they
+//! should be able to set themselves up, they are easy to test: no code is required in most cases, just
+//! the input and the expected output. Using a strict data-only means of communication means that a tool
+//! can effectively run anywhere, and using a loose, dynamic data type makes it easy to write tools that
+//! can work together without needing a lot of extra knowledge.
 //!
-//! Keeping tools to simple single purpose use cases means that any given tool should remain comparatively
-//! simple. Making them composable makes it so that larger tools and applications can be built from smaller
-//! ones. Having it so that they only talk in terms of concrete data means that it's easy to substitute one
-//! tool for another even at runtime.
+//! Tools can be created by implementing the `Tool` trait, but this library provides some convenience
+//! functions for making new ones from Rust functions:
+//!
+//! ```
+//! # #[macro_use] extern crate serde_json;
+//! # #[macro_use] extern crate toolup;
+//! # #[macro_use] extern crate serde;
+//! # fn main() {
+//! # 
+//! use toolup::*;
+//! use toolup::basic::*;
+//! use serde_json::*;
+//!
+//! let tool = make_pure_tool(|(x, y): (i32, i32)| x+y);
+//! assert!(tool.invoke_json(json![ [ 1, 2 ] ], &EmptyEnvironment::new()) == Ok(json![ 3 ]));
+//! # }
+//! ```
 //!
 //! ## The environment
 //!
@@ -42,10 +45,31 @@
 //! for instance to call another tool named in its input. To allow for this, tools are provided with their
 //! environment when they are invoked.
 //!
-//! ## The automation layer
+//! The easiest environment to use is the dynamic environment, which allows for tools to be defined on the fly:
+//!
+//! ```
+//! use toolup::basic::*;
+//!
+//! let env = DynamicEnvironment::new();
+//! env.define("add", Box::new(make_pure_tool(|(x, y): (i32, i32)| x+y)));
+//! ```
+//!
+//! There are some convenience functions to make tools from environments easier to work with:
+//!
+//! ```
+//! # use toolup::basic::*;
+//! # 
+//! # let env = DynamicEnvironment::new();
+//! # env.define("add", Box::new(make_pure_tool(|(x, y): (i32, i32)| x+y)));
+//! let typed_tool  = env.get_typed_tool("add").unwrap();
+//! let result      = typed_tool.invoke((4, 5), &env);
+//! assert!(result == Ok(9));
+//! ```
+//!
+//! ## The orchestration layer
 //!
 //! Tools usually don't provide much of a feedback loop: they run, perform a single task, and then they stop.
-//! To create an actual application, an 'automation layer' is used. This chains tools together and deals with
+//! To create an actual application, an 'orchestration layer' is used. This chains tools together and deals with
 //! feedback. For a web app, this might be the HTML and Javascript that runs in the browser. For other apps,
 //! this could be written in Rust or it could be written using a scripting language.
 //!
