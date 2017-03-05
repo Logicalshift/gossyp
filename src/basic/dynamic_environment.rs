@@ -60,12 +60,22 @@ impl DynamicTool {
 /// Structure used to store the tools in a dynamic environment
 ///
 struct DynamicToolMap {
-    tools: HashMap<String, DynamicTool>
+    tools: HashMap<String, DynamicTool>,
+
+    // Whether or not the three built-in tools have been flagged as undefined
+    undefined_list:     bool,
+    undefined_define:   bool,
+    undefined_undefine: bool
 }
 
 impl DynamicToolMap {
     fn new() -> DynamicToolMap {
-        DynamicToolMap { tools: HashMap::new() }
+        DynamicToolMap { 
+            tools:              HashMap::new(),
+            undefined_list:     false,
+            undefined_define:   false,
+            undefined_undefine: false         
+        }
     }
 }
 
@@ -77,7 +87,9 @@ pub struct DynamicEnvironment {
 
 impl DynamicEnvironment {
     pub fn new() -> DynamicEnvironment {
-        DynamicEnvironment { tools: Arc::new(Mutex::new(DynamicToolMap::new())) }
+        DynamicEnvironment { 
+            tools: Arc::new(Mutex::new(DynamicToolMap::new()))
+        }
     }
 }
 
@@ -88,6 +100,34 @@ impl DynamicEnvironment {
     pub fn define(&self, name: &str, tool: Box<Tool>) {
         let mut map = self.tools.lock().unwrap();
         map.tools.insert(String::from(name), DynamicTool::new(tool));
+    }
+
+    ///
+    /// Undefines a tool and returns whether or not it was present in the map
+    ///
+    pub fn undefine(&self, name: &str) -> bool {
+        // Remove from the map
+        let mut map     = self.tools.lock().unwrap();
+        let last_value  = map.tools.remove(&String::from(name));
+
+        let mut removed = last_value.is_some();
+
+        // Undefine the 'internal' tools
+        match name {
+            super::tool_name::DEFINE_TOOL => {
+                removed = removed || !map.undefined_define;
+                map.undefined_define = true;
+            },
+
+            super::tool_name::LIST_TOOLS => {
+                removed = removed || !map.undefined_list;
+                map.undefined_list = true;
+            },
+
+            _ => ()
+        }
+        
+        removed
     }
 
     ///
@@ -145,23 +185,31 @@ impl Environment for DynamicEnvironment {
             None => {
                 match name {
                     super::tool_name::DEFINE_TOOL => {
-                        // Cloning the environment creates a new reference to the map that we can use in the tool
-                        let target_environment = self.clone();
+                        if !map.undefined_define {
+                            // Cloning the environment creates a new reference to the map that we can use in the tool
+                            let target_environment = self.clone();
 
-                        // Generate a define-tool tool when this is requested (calls through to define_tool)
-                        Ok(Box::new(make_dynamic_tool(move |input: DefineToolInput, source_environment| {
-                            target_environment.define_tool(&input.source_name.clone(), &input.target_name.unwrap_or(input.source_name), source_environment)
-                        })))
+                            // Generate a define-tool tool when this is requested (calls through to define_tool)
+                            Ok(Box::new(make_dynamic_tool(move |input: DefineToolInput, source_environment| {
+                                target_environment.define_tool(&input.source_name.clone(), &input.target_name.unwrap_or(input.source_name), source_environment)
+                            })))
+                        } else {
+                            Err(RetrieveToolError::not_found())
+                        }
                     },
 
                     super::tool_name::LIST_TOOLS => {
-                        // Cloning the environment creates a new reference to the map that we can use in the tool
-                        let target_environment = self.clone();
+                        if !map.undefined_list {
+                            // Cloning the environment creates a new reference to the map that we can use in the tool
+                            let target_environment = self.clone();
 
-                        // List the tools on request
-                        Ok(Box::new(make_pure_tool(move |_: ()| {
-                            target_environment.list_tools()
-                        })))
+                            // List the tools on request
+                            Ok(Box::new(make_pure_tool(move |_: ()| {
+                                target_environment.list_tools()
+                            })))
+                        } else {
+                            Err(RetrieveToolError::not_found())
+                        }
                     }
 
                     // TODO: add the ability to delete tools too (including our own define-tool and list-tools)
@@ -204,6 +252,63 @@ mod test {
         let new_tool = dynamic_env.get_typed_tool("test");
         assert!(new_tool.is_ok());
         assert!(new_tool.unwrap().invoke(2, &dynamic_env) == Ok(3));
+    }
+
+    #[test]
+    fn can_undefine_tool() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Define a new tool
+        dynamic_env.define("test", Box::new(make_pure_tool(|x: i32| x+1)));
+
+        // Should exist
+        assert!(dynamic_env.get_json_tool("test").is_ok());
+
+        // Undefine it, check that it no longer exists
+        let was_undefined = dynamic_env.undefine("test");
+        assert!(was_undefined);
+        assert!(dynamic_env.get_json_tool("test").is_err());
+
+        // Should not be able to undefine it again
+        let was_undefined_again = dynamic_env.undefine("test");
+        assert!(!was_undefined_again);
+    }
+
+    #[test]
+    fn can_undefine_define() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Should exist
+        assert!(dynamic_env.get_json_tool("define-tool").is_ok());
+
+        // Undefine it, check that it no longer exists
+        let was_undefined = dynamic_env.undefine("define-tool");
+        assert!(was_undefined);
+        assert!(dynamic_env.get_json_tool("define-tool").is_err());
+
+        // Should not be able to undefine it again
+        let was_undefined_again = dynamic_env.undefine("define-tool");
+        assert!(!was_undefined_again);
+    }
+
+    #[test]
+    fn can_undefine_list() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Should exist
+        assert!(dynamic_env.get_json_tool("list-tools").is_ok());
+
+        // Undefine it, check that it no longer exists
+        let was_undefined = dynamic_env.undefine("list-tools");
+        assert!(was_undefined);
+        assert!(dynamic_env.get_json_tool("list-tools").is_err());
+
+        // Should not be able to undefine it again
+        let was_undefined_again = dynamic_env.undefine("list-tools");
+        assert!(!was_undefined_again);
     }
 
     #[test]
