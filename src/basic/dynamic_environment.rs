@@ -83,15 +83,22 @@ impl DynamicEnvironment {
 
 impl DynamicEnvironment {
     ///
+    /// Defines a new tool in this environment
+    ///
+    pub fn define(&self, name: &str, tool: Box<Tool>) {
+        let mut map = self.tools.lock().unwrap();
+        map.tools.insert(String::from(name), DynamicTool::new(tool));
+    }
+
+    ///
     /// Copies a tool from a source environment into this dynamic environment
     ///
     pub fn define_tool(&self, source_name: &str, target_name: &str, source_environment: &Environment) -> Result<(), Value> {
-        let source = source_environment.get_json_tool(source_name);
+        let source_tool = source_environment.get_json_tool(source_name);
 
-        match source {
-            Ok(source) => {
-                let mut map = self.tools.lock().unwrap();
-                map.tools.insert(String::from(target_name), DynamicTool::new(source));
+        match source_tool {
+            Ok(source_tool) => {
+                self.define(target_name, source_tool);
 
                 Ok(())
             },
@@ -184,6 +191,23 @@ mod test {
 
     #[test]
     fn can_define_tool() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+
+        // Initially there is no tool with this name...
+        assert!(dynamic_env.get_json_tool("test").is_err());
+
+        // Define a new tool
+        dynamic_env.define("test", Box::new(make_pure_tool(|x: i32| x+1)));
+
+        // Should now exist
+        let new_tool = dynamic_env.get_typed_tool("test");
+        assert!(new_tool.is_ok());
+        assert!(new_tool.unwrap().invoke(2, &dynamic_env) == Ok(3));
+    }
+
+    #[test]
+    fn can_define_tool_using_tool() {
         // Create a dynamic environment
         let dynamic_env = DynamicEnvironment::new();
         let define_tool = dynamic_env.get_typed_tool("define-tool").unwrap();
