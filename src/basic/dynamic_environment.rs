@@ -181,10 +181,10 @@ impl DynamicEnvironment {
         let map = self.tools.lock().unwrap();
         let mut defined_names: Vec<String> = map.tools.keys().map(|s| s.clone()).collect();
 
-        // We also define define-tool and list-tools in a dynamic environment
-        defined_names.push(String::from(super::tool_name::DEFINE_TOOL));
-        defined_names.push(String::from(super::tool_name::UNDEFINE_TOOL));
-        defined_names.push(String::from(super::tool_name::LIST_TOOLS));
+        // We also define define-tool, undefine-tool and list-tools in a dynamic environment
+        if !map.undefined_define    { defined_names.push(String::from(super::tool_name::DEFINE_TOOL)); }
+        if !map.undefined_undefine  { defined_names.push(String::from(super::tool_name::UNDEFINE_TOOL)); }
+        if !map.undefined_list      { defined_names.push(String::from(super::tool_name::LIST_TOOLS)); }
 
         // Remove duplicates
         defined_names.sort();
