@@ -25,7 +25,7 @@ use environment::*;
 /// actual code. Tools can be turned into stand-alone command line programs or
 /// web endpoints with no modification.
 ///
-pub trait Tool {
+pub trait Tool : Send+Sync {
     ///
     /// Invokes this tool with its input and output specified using JSON
     ///

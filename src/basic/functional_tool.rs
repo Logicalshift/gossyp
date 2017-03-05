@@ -11,20 +11,20 @@ use super::super::environment::*;
 /// Represents a tool made from a function
 ///
 pub struct FnTool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
-    function: Box<Fn(TIn) -> Result<TOut, TErr> + Send>
+    function: Box<Fn(TIn) -> Result<TOut, TErr> + Send + Sync>
 }
 
 ///
 /// Creates a Tool from a function that can produce an error but does not use an environment
 ///
-pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
     FnTool { function: Box::new(function) }
 }
 
 ///
 /// Creates a Tool from a function that cannot produce an error and doesn't use an environment
 ///
-pub fn make_pure_tool<TIn: Deserialize, TOut: Serialize, F: 'static+Send+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
+pub fn make_pure_tool<TIn: Deserialize, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
     make_tool(move |input| { Ok(function(input)) })
 }
 
