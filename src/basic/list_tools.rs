@@ -76,7 +76,6 @@ mod test {
     use super::super::empty_environment::*;
     use super::super::static_environment::*;
     use super::super::basic_toolset::*;
-    use super::super::functional_tool::*;
 
     #[test]
     fn can_list_tools() {
