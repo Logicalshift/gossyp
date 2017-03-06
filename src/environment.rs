@@ -7,7 +7,7 @@ use tool::*;
 /// precise implementation is located. Environments also provide a way to perform
 /// dependency injection in other tools.
 ///
-pub trait Environment {
+pub trait Environment : Send {
     ///
     /// Retrieves a tool using a JSON interface by name
     ///
