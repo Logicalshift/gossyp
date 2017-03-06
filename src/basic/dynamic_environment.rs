@@ -14,6 +14,7 @@ use super::super::tool::*;
 use super::super::environment::*;
 use super::functional_tool::*;
 use super::list_tools::*;
+use super::toolset::*;
 
 ///
 /// Input to the `define-tool` tool
@@ -116,6 +117,17 @@ impl DynamicEnvironment {
     pub fn define(&self, name: &str, tool: Box<Tool>) {
         let mut map = self.tools.lock().unwrap();
         map.tools.insert(String::from(name), DynamicTool::new(tool));
+    }
+
+    ///
+    /// Imports a ToolSet into this environment
+    ///
+    pub fn import<TToolSet: ToolSet>(&self, toolset: TToolSet) {
+        for tool_and_name in toolset.create_tools(self) {
+            let (name, tool) = tool_and_name;
+
+            self.define(&name, tool);
+        }
     }
 
     ///
@@ -281,6 +293,28 @@ mod test {
 
         // Define a new tool
         dynamic_env.define("test", Box::new(make_pure_tool(|x: i32| x+1)));
+
+        // Should now exist
+        let new_tool = dynamic_env.get_typed_tool("test");
+        assert!(new_tool.is_ok());
+        assert!(new_tool.unwrap().invoke(2, &dynamic_env) == Ok(3));
+    }
+
+    #[test]
+    fn can_import_toolset() {
+        // Create a dynamic environment
+        let dynamic_env = DynamicEnvironment::new();
+        let toolset = BasicToolSet::from(vec![
+            ("test", make_pure_tool(|x: i32| x+1)),
+            ("test2", make_pure_tool(|x: i32| x+2)),
+            ("test3", make_pure_tool(|x: i32| x+3)),
+        ]);
+
+        // Initially there are no tools
+        assert!(dynamic_env.get_json_tool("test").is_err());
+
+        // Import the toolset
+        dynamic_env.import(toolset);
 
         // Should now exist
         let new_tool = dynamic_env.get_typed_tool("test");
