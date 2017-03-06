@@ -26,7 +26,7 @@ pub trait ToolSet {
     ///
     /// Creates the tools in this toolset
     ///
-    fn create_tools(self, environment: &Environment) -> Vec<Box<NamedTool>>;
+    fn create_tools(self, environment: &Environment) -> Vec<(String, Box<Tool>)>;
 }
 
 impl<'a, T: Tool> Tool for (&'a str, T) {

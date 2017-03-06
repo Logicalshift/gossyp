@@ -1,5 +1,6 @@
 use super::toolset::*;
 use super::functional_tool::*;
+use super::super::tool::*;
 use super::super::environment::*;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -45,14 +46,15 @@ impl<TToolSet: ToolSet> ToolSet for ToolSetWithList<TToolSet> {
     ///
     /// Creates the tools in this toolset
     ///
-    fn create_tools(self, environment: &Environment) -> Vec<Box<NamedTool>> {
+    fn create_tools(self, environment: &Environment) -> Vec<(String, Box<Tool>)> {
         // Create the initial set of tools
         let mut result = self.source.create_tools(environment);
 
         // Get the names of the tools
         let mut names = vec![];
         for tool in result.iter() {
-            names.push(String::from(tool.get_name()));
+            let &(ref tool_name, _) = tool;
+            names.push(tool_name.clone());
         }
 
         // Names will include list-tools, and should have no duplicates
@@ -63,7 +65,7 @@ impl<TToolSet: ToolSet> ToolSet for ToolSetWithList<TToolSet> {
         // Create the list-tools tool
         let list_tools = make_pure_tool(move |_: ()| { ListToolsResult { names: names.clone() } });
 
-        result.push(Box::new((super::tool_name::LIST_TOOLS, list_tools)));
+        result.push((String::from(super::tool_name::LIST_TOOLS), Box::new(list_tools)));
 
         result
     }

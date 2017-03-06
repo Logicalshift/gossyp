@@ -16,7 +16,7 @@ use super::toolset::*;
 ///
 pub struct StaticEnvironment {
     /// The tools in this environment
-    tools: HashMap<String, Arc<Box<NamedTool>>>
+    tools: HashMap<String, Arc<Box<Tool>>>
 }
 
 ///
@@ -24,7 +24,7 @@ pub struct StaticEnvironment {
 ///
 struct StaticEnvironmentTool {
     /// Reference to the tool within the environment
-    tool: Arc<Box<NamedTool>>
+    tool: Arc<Box<Tool>>
 }
 
 impl Tool for StaticEnvironmentTool {
@@ -52,11 +52,11 @@ impl StaticEnvironment {
     /// Creates a new static environment from a toolset
     ///
     pub fn from_toolset<T: ToolSet>(set: T, environment: &Environment) -> StaticEnvironment {
-        let tools       = set.create_tools(environment);
+        let tools           = set.create_tools(environment);
         let mut tool_hash   = HashMap::new();
 
-        for tool in tools {
-            let name = String::from(tool.get_name());
+        for tool_and_name in tools {
+            let (name, tool) = tool_and_name;
             
             tool_hash.insert(name, Arc::new(tool));
         }
