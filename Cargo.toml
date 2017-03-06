@@ -1,5 +1,5 @@
 [package]
-name    = "toolup"
+name    = "silkthread"
 version = "0.1.0"
 license = "Apache"
 authors = ["Andrew Hunter <andrew@logicalshift.io>"]
