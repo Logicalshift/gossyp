@@ -133,7 +133,7 @@ mod test{
     }
 
     #[test]
-    fn can_sort_using_object() {
+    fn can_sort_using_parameter_object() {
         let env     = EmptyEnvironment::new();
         let tool    = TypedTool::from(Box::new(SortTool::new()));
 
