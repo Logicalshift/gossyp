@@ -151,14 +151,14 @@ pub trait TypedEnvironment {
     ///
     /// Retrieves a tool using a Rust interface by name
     ///
-    fn get_typed_tool<'a, TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError>;
+    fn get_typed_tool<TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError>;
 }
 
 impl<TEnv> TypedEnvironment for TEnv where TEnv: Environment {
     ///
     /// Retrieves a tool using a Rust interface by name
     ///
-    fn get_typed_tool<'a, TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError> {
+    fn get_typed_tool<TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError> {
         self.get_json_tool(name).map(|tool| TypedTool::from(tool))
     }
 }
