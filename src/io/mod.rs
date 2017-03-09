@@ -1,11 +1,15 @@
 pub mod print;
+pub mod write_bytes;
 pub mod tool;
+pub mod shared_stream;
 
 pub use self::print::*;
+pub use self::write_bytes::*;
 
 use std::io::*;
 use silkthread_base::*;
 use silkthread_base::basic::*;
+use self::shared_stream::*;
 
 ///
 /// Tools for performing I/O
@@ -85,10 +89,11 @@ impl<ReadStream: 'static+Read+Send> ToolSet for ReadTools<ReadStream> {
 
 impl<WriteStream: 'static+Write+Send> ToolSet for WriteTools<WriteStream> {
     fn create_tools(self, _environment: &Environment) -> Vec<(String, Box<Tool>)> {
-        let write_stream = self.write_stream;
+        let write_stream = SharedWrite::new(self.write_stream);
 
         vec![
-            (String::from(self::tool::PRINT), Box::new(PrintTool::<WriteStream>::new_with_stream(write_stream)))
+            (String::from(self::tool::PRINT),       Box::new(PrintTool::<SharedWrite<WriteStream>>::new_with_stream(write_stream.clone()))),
+            (String::from(self::tool::WRITE_BYTES), Box::new(WriteBytesTool::<SharedWrite<WriteStream>>::new_with_stream(write_stream.clone())))
         ]
     }
 }
