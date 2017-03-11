@@ -1,5 +1,5 @@
 [package]
-name    = "silkthread_toolkit"
+name    = "silkthread_lang"
 version = "0.1.0"
 license = "MIT"
 authors = ["Andrew Hunter <andrew@logicalshift.io>"]
