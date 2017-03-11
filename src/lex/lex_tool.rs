@@ -25,9 +25,21 @@ pub struct LexToolInput {
 }
 
 ///
-/// Represents a lexer match
+/// Lexer symbol
 ///
 #[derive(Serialize, Deserialize)]
+pub struct LexToolSymbol {
+    /// The name of the symbol that will be generated if this match is made
+    pub symbol_name:    String,
+
+    /// The rule that will be matched against this symbol
+    pub match_rule:     String
+}
+
+///
+/// Represents a lexer match
+///
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct LexerMatch {
     /// Token that was matched
     pub token:      String,
@@ -40,18 +52,6 @@ pub struct LexerMatch {
 
     /// End of the match
     pub end:        i32
-}
-
-///
-/// Lexer symbol
-///
-#[derive(Serialize, Deserialize)]
-pub struct LexToolSymbol {
-    /// The name of the symbol that will be generated if this match is made
-    pub symbol_name:    String,
-
-    /// The rule that will be matched against this symbol
-    pub match_rule:     String
 }
 
 ///
@@ -493,6 +493,41 @@ mod test {
     #[test]
     fn can_create_match_set_and_range() {
         assert!(LexTool::pattern_for_string("[aA-Z]") == MatchAny(vec![ MatchRange('a', 'a'), MatchRange('A', 'Z') ]));
+    }
+
+    #[test]
+    fn can_generate_simple_lexer() {
+        let env     = DynamicEnvironment::new();
+        let lexer   = TypedTool::<LexToolInput, ()>::from(Box::new(LexTool::new()));
+
+        let def     = LexToolInput {
+            new_tool_name: String::from("sample-lexer"),
+            symbols: vec![
+                LexToolSymbol { symbol_name: String::from("Hello"), match_rule: String::from("Hello") },
+                LexToolSymbol { symbol_name: String::from("Other"), match_rule: String::from("W.*") },
+            ]
+        };
+
+        lexer.invoke(def, &env);
+
+        let tool                                = env.get_typed_tool("sample-lexer").unwrap();
+        let lex_test_result: Vec<LexerMatch>    = tool.invoke("HelloWorld", &env).unwrap();
+
+        assert!(lex_test_result == vec![
+            LexerMatch {
+                token: String::from("Hello"),
+                matched: String::from("Hello"),
+                start: 0,
+                end: 4
+            },
+
+            LexerMatch {
+                token: String::from("Other"),
+                matched: String::from("World"),
+                start: 5,
+                end: 9
+            }
+        ]);
     }
 }
 
