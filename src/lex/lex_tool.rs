@@ -15,7 +15,7 @@ use silkthread_base::basic::tool_name::*;
 ///
 /// Input for the lexer tool
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LexToolInput {
     /// Name of the tool that the lexer will define
     pub new_tool_name:  String,
@@ -27,7 +27,7 @@ pub struct LexToolInput {
 ///
 /// Lexer symbol
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LexToolSymbol {
     /// The name of the symbol that will be generated if this match is made
     pub symbol_name:    String,
@@ -39,7 +39,7 @@ pub struct LexToolSymbol {
 ///
 /// Represents a lexer match
 ///
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub struct LexerMatch {
     /// Token that was matched
     pub token:      String,
@@ -518,14 +518,14 @@ mod test {
                 token:      String::from("Hello"),
                 matched:    String::from("Hello"),
                 start:      0,
-                end:        4
+                end:        5
             },
 
             LexerMatch {
                 token:      String::from("Other"),
                 matched:    String::from("World"),
                 start:      5,
-                end:        9
+                end:        10
             }
         ]);
     }
