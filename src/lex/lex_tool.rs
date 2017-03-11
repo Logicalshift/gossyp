@@ -361,7 +361,7 @@ impl Tool for LexTool {
                 let lexer_env       = StaticEnvironment::from_toolset(lexer_toolset, &EmptyEnvironment::new());
 
                 // Define it in the environment
-                define_tool.invoke(DefineToolInput::new("new", Some(&lex_defn.new_tool_name)), &lexer_env).map(|_| Value::Null)
+                define_tool.invoke(DefineToolInput::new("lex", Some(&lex_defn.new_tool_name)), &lexer_env).map(|_| Value::Null)
             }
         }
     }
@@ -508,24 +508,24 @@ mod test {
             ]
         };
 
-        lexer.invoke(def, &env);
+        lexer.invoke(def, &env).unwrap();
 
         let tool                                = env.get_typed_tool("sample-lexer").unwrap();
         let lex_test_result: Vec<LexerMatch>    = tool.invoke("HelloWorld", &env).unwrap();
 
         assert!(lex_test_result == vec![
             LexerMatch {
-                token: String::from("Hello"),
-                matched: String::from("Hello"),
-                start: 0,
-                end: 4
+                token:      String::from("Hello"),
+                matched:    String::from("Hello"),
+                start:      0,
+                end:        4
             },
 
             LexerMatch {
-                token: String::from("Other"),
-                matched: String::from("World"),
-                start: 5,
-                end: 9
+                token:      String::from("Other"),
+                matched:    String::from("World"),
+                start:      5,
+                end:        9
             }
         ]);
     }
