@@ -5,7 +5,6 @@
 use std::result::Result;
 use std::error::Error;
 use std::iter::*;
-use serde::*;
 use serde_json::*;
 use concordance::*;
 use silkthread_base::*;
@@ -394,7 +393,7 @@ impl StringLexingTool {
 }
 
 impl Tool for StringLexingTool {
-    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
+    fn invoke_json(&self, input: Value, _environment: &Environment) -> Result<Value, Value> {
         if let Value::String(input) = input {
             // Input must be a simple string
 
@@ -530,4 +529,3 @@ mod test {
         ]);
     }
 }
-
