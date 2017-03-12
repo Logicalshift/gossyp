@@ -287,7 +287,7 @@ impl LexTool {
                     let pattern_len = pattern.len();
                     if pattern_len > 0 {
                         if let Some(last) = pattern.last().map(|x| x.clone()) {
-                            pattern[pattern_len-1] = Repeat(0..1, Box::new(last));
+                            pattern[pattern_len-1] = Repeat(0..2, Box::new(last));
                         }
                     }
                 },
@@ -571,7 +571,7 @@ mod test {
 
     #[test]
     fn can_create_optional() {
-        assert!(LexTool::pattern_for_string("a?") == Repeat(0..1, Box::new(Match(vec!['a']))));
+        assert!(LexTool::pattern_for_string("a?") == Repeat(0..2, Box::new(Match(vec!['a']))));
     }
 
     #[test]
