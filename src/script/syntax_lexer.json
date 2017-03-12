@@ -152,7 +152,7 @@
 
     {
         "symbol_name": "Identifier",
-        "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.{}()=\\[\\]]*"
+        "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.,/'\"`{}()=\\[\\]]*"
     },
 
     {
