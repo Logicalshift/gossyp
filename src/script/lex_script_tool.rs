@@ -24,6 +24,16 @@ mod test {
     use std::error::Error;
     use super::*;
 
+    fn lex_tokens(input: &str) -> Vec<String> {
+        let lex_tool = create_lex_script_tool();
+
+        lex_tool
+            .lex(input)
+            .iter()
+            .map(|x| x.token.clone())
+            .collect()
+    }
+
     #[test]
     fn can_parse_syntax_json() {
         let script_json = from_str::<Value>(include_str!("syntax_lexer.json"));
@@ -50,5 +60,65 @@ mod test {
     #[test]
     fn can_create_tool() {
         let _tool = create_lex_script_tool();
+    }
+
+    #[test]
+    fn can_lex_identifier() {
+        assert!(lex_tokens("something") == vec![ String::from("Identifier") ]);
+    }
+
+    #[test]
+    fn can_lex_let_keyword() {
+        assert!(lex_tokens("let") == vec![ String::from("let") ]);
+    }
+
+    #[test]
+    fn can_lex_whitespace() {
+        assert!(lex_tokens(" ") == vec![ String::from("Whitespace") ]);
+    }
+
+    #[test]
+    fn can_lex_plus_symbol() {
+        assert!(lex_tokens("+") == vec![ String::from("+") ]);
+    }
+
+    #[test]
+    fn can_lex_dot_symbol() {
+        assert!(lex_tokens(".") == vec![ String::from(".") ]);
+    }
+
+    #[test]
+    fn can_lex_newline() {
+        assert!(lex_tokens("\n") == vec![ String::from("Newline") ]);
+    }
+
+    #[test]
+    fn can_lex_simple_number() {
+        assert!(lex_tokens("1") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
+    fn can_lex_longer_number() {
+        assert!(lex_tokens("123") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
+    fn can_lex_decimal_number() {
+        assert!(lex_tokens("1.21") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
+    fn can_lex_decimal_with_exponent() {
+        assert!(lex_tokens("1.2e10") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
+    fn can_lex_integer_with_exponent() {
+        assert!(lex_tokens("1e10") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
+    fn can_lex_decimal_number_beginning_with_dot() {
+        assert!(lex_tokens(".21") == vec![ String::from("Number") ]);
     }
 }
