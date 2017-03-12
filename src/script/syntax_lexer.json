@@ -1,5 +1,4 @@
 [
-    // Keywords
     {
         "symbol_name": "let",
         "match_rule":  "let"
@@ -33,7 +32,6 @@
         "match_rule":  "def"
     },
 
-    // Symbols
     {
         "symbol_name": ".",
         "match_rule":  "\\."
@@ -119,7 +117,6 @@
         "match_rule":  "}"
     },
 
-    // Strings and numbers
     {
         "symbol_name": "String",
         "match_rule":  "\"([^\"])|(\\\")\""
@@ -133,13 +130,11 @@
         "match_rule":  "0x[0-9A-Fa-f]+"
     },
 
-    // Identifiers
     {
         "symbol_name": "Identifier",
         "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.{}()=]*"
     },
 
-    // Whitespace, comments, other separators
     {
         "symbol_name": "Newline",
         "match_rule":  "\\n"
@@ -153,7 +148,6 @@
         "match_rule":  "(#[^\n]*)|(//[^\n]*)"
     },
 
-    // Unknown: catches everything we don't match
     {
         "symbol_name": "Unknown",
         "match_rule":  "."
