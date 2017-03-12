@@ -80,8 +80,8 @@ impl LexTool {
     }
 
     ///
-    /// Given a list of non-overlapping ranges, determines the range
-    /// representing every other character
+    /// Given a list of ranges, determines the set of ranges representing
+    /// the characters that are not covered by the list
     ///
     fn invert_ranges(mut ranges: Vec<(char, char)>) -> Vec<(char, char)> {
         let mut result = vec![];
@@ -97,8 +97,13 @@ impl LexTool {
             let (range_start, range_end)            = range;
             let (range_start_u32, range_end_u32)    = (range_start as u32, range_end as u32);
 
+            // Range must be after the current start position, or we've already covered it
+            if range_end_u32 < start {
+                continue;
+            }
+
             // A new range is only generated if it has at least one character in it
-            if range_start_u32 != start {
+            if range_start_u32 > start {
                 result.push((char::from_u32(start).unwrap(), char::from_u32(range_start_u32-1).unwrap()));
             }
 
@@ -310,7 +315,7 @@ impl LexTool {
                         pos += 1;
                     }
 
-                    // Invert the ranges if that's what was requested
+                    // Invert the ranges if this is a '[^' type range
                     if inverted {
                         ranges = LexTool::invert_ranges(ranges);
                     }
