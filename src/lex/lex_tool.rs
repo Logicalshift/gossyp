@@ -433,7 +433,7 @@ impl Tool for LexTool {
 /// Tool that reads a string and generates a lexed array of matches
 ///
 pub struct StringLexingTool {
-    matcher: TokenMatcher<char, String>
+    matcher: SymbolRangeDfa<char, String>
 }
 
 impl StringLexingTool {
@@ -448,17 +448,17 @@ impl StringLexingTool {
             token_matcher.add_pattern(LexTool::pattern_for_string(&symbol.match_rule), symbol.symbol_name.clone());
         }
 
-        token_matcher.prepare_to_match();
+        let prepared = token_matcher.prepare_to_match();
 
         // This is what we use in the lexing tool
-        StringLexingTool { matcher: token_matcher }
+        StringLexingTool { matcher: prepared }
     }
 
     ///
     /// Performs lexing
     ///
     pub fn lex(&self, string: &str) -> Vec<LexerMatch> {
-        let mut tokenizer   = Tokenizer::new(string.read_symbols(), &self.matcher);
+        let mut tokenizer   = Tokenizer::new_prepared(string.read_symbols(), &self.matcher);
         let mut result      = vec![];
 
         while let Some((range, token)) = tokenizer.next() {
