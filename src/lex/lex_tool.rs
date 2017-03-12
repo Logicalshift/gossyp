@@ -618,4 +618,32 @@ mod test {
             }
         ]);
     }
+
+    #[test]
+    fn earlier_items_are_disambiguated_first() {
+        let env     = DynamicEnvironment::new();
+        let lexer   = TypedTool::<LexToolInput, ()>::from(Box::new(LexTool::new()));
+
+        let def     = LexToolInput {
+            new_tool_name: String::from("sample-lexer"),
+            symbols: vec![
+                LexToolSymbol { symbol_name: String::from("Hello"), match_rule: String::from("Hello") },
+                LexToolSymbol { symbol_name: String::from("AAAAA"), match_rule: String::from("Hello") },
+            ]
+        };
+
+        lexer.invoke(def, &env).unwrap();
+
+        let tool                                = env.get_typed_tool("sample-lexer").unwrap();
+        let lex_test_result: Vec<LexerMatch>    = tool.invoke("Hello", &env).unwrap();
+
+        assert!(lex_test_result == vec![
+            LexerMatch {
+                token:      String::from("Hello"),
+                matched:    String::from("Hello"),
+                start:      0,
+                end:        5
+            }
+        ]);
+    }
 }
