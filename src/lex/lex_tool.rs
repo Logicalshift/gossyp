@@ -480,6 +480,16 @@ mod test {
     }
 
     #[test]
+    fn can_create_inverse_map_range() {
+        assert!(LexTool::pattern_for_string("[^a-z]") == MatchAny(vec![ MatchRange('\u{0000}', '`'), MatchRange('{', '\u{10ffff}') ]));
+    }
+
+    #[test]
+    fn can_create_inverse_map_range_for_multiple_ranges() {
+        assert!(LexTool::pattern_for_string("[^a-zA-Z]") == MatchAny(vec![ MatchRange('\u{0000}', '@'), MatchRange('[', '`'), MatchRange('{', '\u{10ffff}') ]));
+    }
+
+    #[test]
     fn can_create_match_set() {
         assert!(LexTool::pattern_for_string("[acgh]") == MatchAny(vec![ MatchRange('a', 'a'), MatchRange('c', 'c'), MatchRange('g', 'g'), MatchRange('h', 'h') ]));
     }
