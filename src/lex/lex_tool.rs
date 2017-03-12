@@ -5,6 +5,7 @@
 use std::result::Result;
 use std::error::Error;
 use std::iter::*;
+use std::char;
 use serde_json::*;
 use concordance::*;
 use silkthread_base::*;
@@ -76,6 +77,41 @@ impl LexTool {
 
         // Go on to build the pattern
         LexTool::pattern_for_chars(&regex_chars)
+    }
+
+    ///
+    /// Given a list of non-overlapping ranges, determines the range
+    /// representing every other character
+    ///
+    fn invert_ranges(mut ranges: Vec<(char, char)>) -> Vec<(char, char)> {
+        let mut result = vec![];
+
+        // Order the ranges by where they start
+        ranges.sort_by_key(|&(start, _)| start);
+
+        // Character index after the end of the last range
+        let mut start = 0;
+
+        for range in ranges {
+            // Rust doesn't support arithmetic on chars, so we go via u32 here
+            let (range_start, range_end)            = range;
+            let (range_start_u32, range_end_u32)    = (range_start as u32, range_end as u32);
+
+            // A new range is only generated if it has at least one character in it
+            if range_start_u32 != start {
+                result.push((char::from_u32(start).unwrap(), char::from_u32(range_start_u32-1).unwrap()));
+            }
+
+            // The next range will start after the current range
+            start = range_end_u32+1;
+        }
+
+        // There's a final range from wherever we are to 0x10ffff
+        if start <= 0x10ffff {
+            result.push((char::from_u32(start).unwrap(), '\u{10ffff}'));
+        }
+
+        result
     }
 
     ///
@@ -240,8 +276,15 @@ impl LexTool {
 
                 '[' => {
                     // Character ranges
-                    let mut ranges = vec![];
+                    let mut ranges      = vec![];
+                    let mut inverted    = false;
                     pos += 1;
+
+                    // '[^' indicates an inverted range
+                    if pos < regex_len && regex[pos] == '^' {
+                        inverted = true;
+                        pos += 1;
+                    }
 
                     let mut last_char = None;
                     while pos < regex_len && regex[pos] != ']' {
@@ -265,6 +308,11 @@ impl LexTool {
                         }
 
                         pos += 1;
+                    }
+
+                    // Invert the ranges if that's what was requested
+                    if inverted {
+                        ranges = LexTool::invert_ranges(ranges);
                     }
 
                     if ranges.len() == 1 {
@@ -487,6 +535,11 @@ mod test {
     #[test]
     fn can_create_inverse_map_range_for_multiple_ranges() {
         assert!(LexTool::pattern_for_string("[^a-zA-Z]") == MatchAny(vec![ MatchRange('\u{0000}', '@'), MatchRange('[', '`'), MatchRange('{', '\u{10ffff}') ]));
+    }
+
+    #[test]
+    fn can_create_inverse_map_range_overlapping() {
+        assert!(LexTool::pattern_for_string("[^a-db-qq-z]") == MatchAny(vec![ MatchRange('\u{0000}', '`'), MatchRange('{', '\u{10ffff}') ]));
     }
 
     #[test]
