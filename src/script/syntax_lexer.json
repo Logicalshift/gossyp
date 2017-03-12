@@ -28,6 +28,14 @@
         "match_rule":  "loop"
     },
     {
+        "symbol_name": "for",
+        "match_rule":  "for"
+    },
+    {
+        "symbol_name": "in",
+        "match_rule":  "in"
+    },
+    {
         "symbol_name": "def",
         "match_rule":  "def"
     },
