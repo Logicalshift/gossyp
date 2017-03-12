@@ -1,0 +1,161 @@
+[
+    // Keywords
+    {
+        "symbol_name": "let",
+        "match_rule":  "let"
+    },
+    {
+        "symbol_name": "var",
+        "match_rule":  "var"
+    },
+    {
+        "symbol_name": "if",
+        "match_rule":  "if"
+    },
+    {
+        "symbol_name": "using",
+        "match_rule":  "using"
+    },
+    {
+        "symbol_name": "while",
+        "match_rule":  "while"
+    },
+    {
+        "symbol_name": "do",
+        "match_rule":  "do"
+    },
+    {
+        "symbol_name": "loop",
+        "match_rule":  "loop"
+    },
+    {
+        "symbol_name": "def",
+        "match_rule":  "def"
+    },
+
+    // Symbols
+    {
+        "symbol_name": ".",
+        "match_rule":  "\\."
+    },
+    {
+        "symbol_name": "+",
+        "match_rule":  "+"
+    },
+    {
+        "symbol_name": "-",
+        "match_rule":  "-"
+    },
+    {
+        "symbol_name": "*",
+        "match_rule":  "*"
+    },
+    {
+        "symbol_name": "/",
+        "match_rule":  "/"
+    },
+    {
+        "symbol_name": "|",
+        "match_rule":  "\\|"
+    },
+    {
+        "symbol_name": "&",
+        "match_rule":  "\\&"
+    },
+    {
+        "symbol_name": "=",
+        "match_rule":  "="
+    },
+    {
+        "symbol_name": "==",
+        "match_rule":  "=="
+    },
+    {
+        "symbol_name": "!=",
+        "match_rule":  "!="
+    },
+    {
+        "symbol_name": ">",
+        "match_rule":  ">"
+    },
+    {
+        "symbol_name": "<",
+        "match_rule":  "<"
+    },
+    {
+        "symbol_name": "<=",
+        "match_rule":  "<="
+    },
+    {
+        "symbol_name": ">=",
+        "match_rule":  ">="
+    },
+    {
+        "symbol_name": "!",
+        "match_rule":  "!"
+    },
+    {
+        "symbol_name": "||",
+        "match_rule":  "\\|\\|"
+    },
+    {
+        "symbol_name": "&&",
+        "match_rule":  "&&"
+    },
+    {
+        "symbol_name": "(",
+        "match_rule":  "\\("
+    },
+    {
+        "symbol_name": ")",
+        "match_rule":  "\\)"
+    },
+    {
+        "symbol_name": "{",
+        "match_rule":  "{"
+    },
+    {
+        "symbol_name": "}",
+        "match_rule":  "}"
+    },
+
+    // Strings and numbers
+    {
+        "symbol_name": "String",
+        "match_rule":  "\"([^\"])|(\\\")\""
+    },
+    {
+        "symbol_name": "Number",
+        "match_rule":  "([0-9]*(\\.[0-9]+)?)|(\\.[0-9]+)(e|E[0-9]+)"
+    },
+    {
+        "symbol_name": "HexNumber",
+        "match_rule":  "0x[0-9A-Fa-f]+"
+    },
+
+    // Identifiers
+    {
+        "symbol_name": "Identifier",
+        "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.{}()=]*"
+    },
+
+    // Whitespace, comments, other separators
+    {
+        "symbol_name": "Newline",
+        "match_rule":  "\\n"
+    },
+    {
+        "symbol_name": "Whitespace",
+        "match_rule":  "\\w*"
+    },
+    {
+        "symbol_name": "Comment",
+        "match_rule":  "(#[^\n]*)|(//[^\n]*)"
+    },
+
+    // Unknown: catches everything we don't match
+    {
+        "symbol_name": "Unknown",
+        "match_rule":  "."
+    }
+]
