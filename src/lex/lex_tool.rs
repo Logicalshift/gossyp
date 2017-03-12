@@ -453,6 +453,25 @@ impl StringLexingTool {
         // This is what we use in the lexing tool
         StringLexingTool { matcher: token_matcher }
     }
+
+    ///
+    /// Performs lexing
+    ///
+    pub fn lex(&self, string: &str) -> Vec<LexerMatch> {
+        let mut tokenizer   = Tokenizer::new(string.read_symbols(), &self.matcher);
+        let mut result      = vec![];
+
+        while let Some((range, token)) = tokenizer.next() {
+            result.push(LexerMatch { 
+                token:      token,
+                matched:    String::from(&string[range.clone()]),
+                start:      range.start as i32,
+                end:        range.end as i32
+            });
+        }
+
+        result
+    }
 }
 
 impl Tool for StringLexingTool {
@@ -460,21 +479,9 @@ impl Tool for StringLexingTool {
         if let Value::String(input) = input {
             // Input must be a simple string
 
-            // Start tokenizing it
-            let mut tokenizer   = Tokenizer::new(input.read_symbols(), &self.matcher);
-            let mut result      = vec![];
-
-            while let Some((range, token)) = tokenizer.next() {
-                result.push(json![ { 
-                    "token":    token,
-                    "matched":  input[range.clone()],
-                    "start":    range.start,
-                    "end":      range.end
-                } ]);
-            }
-
-            // Final result is an array of tokens
-            Ok(Value::Array(result))
+            // Tokenize it
+            let result = self.lex(&input);
+            Ok(to_value(result).unwrap())
         } else {
             Err(json![{
                 "error": "Input must be a string"
