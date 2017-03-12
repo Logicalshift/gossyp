@@ -1,17 +1,21 @@
 extern crate serde_json;
 extern crate silkthread_base;
 extern crate silkthread_toolkit;
+extern crate silkthread_lang;
 
 use serde_json::*;
 
 use silkthread_base::basic::*;
 use silkthread_toolkit::io::*;
 use silkthread_toolkit::io::tool::*;
+use silkthread_lang::script::*;
+use silkthread_lang::script::tool::*;
 
 fn main() {
     // Start up
     let main_env = DynamicEnvironment::new();
     main_env.import(IoTools::new_stdio());
+    main_env.import(ScriptTools::new());
 
     // Display a header
     let print_string = main_env.get_typed_tool::<String, ()>("print").unwrap();
@@ -22,6 +26,7 @@ fn main() {
         let print_string    = main_env.get_typed_tool::<String, ()>(PRINT).unwrap();
         let print_value     = main_env.get_typed_tool::<Value, ()>(PRINT).unwrap();
         let read_line       = main_env.get_typed_tool::<(), ReadLineResult>(READ_LINE).unwrap();
+        let lex_line        = main_env.get_typed_tool::<String, Value>(LEX_SCRIPT).unwrap();
         let display_prompt  = main_env.get_typed_tool::<(), ()>("display-prompt");
 
         // Display a prompt
@@ -37,7 +42,8 @@ fn main() {
             Ok(result) => {
                 // Process the line
                 // TODO!
-                print_string.invoke(result.line, &main_env).unwrap();
+                let lexed = lex_line.invoke(result.line, &main_env).unwrap();
+                print_value.invoke(lexed, &main_env).unwrap();
                 print_string.invoke(String::from("\n"), &main_env).unwrap();
 
                 // Stop on EOF

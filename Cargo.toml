@@ -10,3 +10,4 @@ serde_json          = "0.9"
 serde_derive        = "0.9"
 silkthread_base     = { path = '../silkthread_base', version = "0.1.0" }
 silkthread_toolkit  = { path = '../silkthread_toolkit', version = "0.1.0" }
+silkthread_lang     = { path = '../silkthread_lang', version = "0.1.0" }
