@@ -279,6 +279,16 @@ impl LexTool {
                     }
                 },
 
+                '?' => {
+                    // Last item 0 or 1 times
+                    let pattern_len = pattern.len();
+                    if pattern_len > 0 {
+                        if let Some(last) = pattern.last().map(|x| x.clone()) {
+                            pattern[pattern_len-1] = Repeat(0..1, Box::new(last));
+                        }
+                    }
+                },
+
                 '[' => {
                     // Character ranges
                     let mut ranges      = vec![];
