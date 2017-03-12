@@ -518,6 +518,11 @@ mod test {
     }
 
     #[test]
+    fn can_create_optional() {
+        assert!(LexTool::pattern_for_string("a?") == Repeat(0..1, Box::new(Match(vec!['a']))));
+    }
+
+    #[test]
     fn can_create_match_one() {
         assert!(LexTool::pattern_for_string("[a]") == MatchRange('a', 'a'));
     }
