@@ -38,7 +38,7 @@
     },
     {
         "symbol_name": "+",
-        "match_rule":  "+"
+        "match_rule":  "\\+"
     },
     {
         "symbol_name": "-",
@@ -93,6 +93,10 @@
         "match_rule":  "!"
     },
     {
+        "symbol_name": "?",
+        "match_rule":  "\\?"
+    },
+    {
         "symbol_name": "||",
         "match_rule":  "\\|\\|"
     },
@@ -116,6 +120,14 @@
         "symbol_name": "}",
         "match_rule":  "}"
     },
+    {
+        "symbol_name": "[",
+        "match_rule":  "\\["
+    },
+    {
+        "symbol_name": "]",
+        "match_rule":  "\\]"
+    },
 
     {
         "symbol_name": "String",
@@ -132,7 +144,7 @@
 
     {
         "symbol_name": "Identifier",
-        "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.{}()=]*"
+        "match_rule":  "[A-Za-zĀ-￰＀][^\\w/#\\.{}()=\\[\\]]*"
     },
 
     {
