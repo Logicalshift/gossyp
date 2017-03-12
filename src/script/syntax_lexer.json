@@ -119,7 +119,7 @@
 
     {
         "symbol_name": "String",
-        "match_rule":  "\"([^\"])|(\\\")\""
+        "match_rule":  "\"(([^\"])|(\\\"))*\""
     },
     {
         "symbol_name": "Number",
