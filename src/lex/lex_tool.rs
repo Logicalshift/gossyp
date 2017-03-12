@@ -4,9 +4,12 @@
 
 use std::result::Result;
 use std::error::Error;
-use std::iter::*;
 use std::char;
+use std::iter::*;
+use std::cmp::*;
+
 use serde_json::*;
+
 use concordance::*;
 use silkthread_base::*;
 use silkthread_base::basic::*;
@@ -430,10 +433,34 @@ impl Tool for LexTool {
 }
 
 ///
+/// Lexer token providing an ordering and the name of the token that should be generated
+///
+#[derive(Clone, Eq, PartialEq)]
+struct LexerToken (i32, String);
+
+impl Ord for LexerToken {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let &LexerToken(ref index, _)       = self;
+        let &LexerToken(ref other_index, _) = other;
+
+        index.cmp(other_index)
+    }
+}
+
+impl PartialOrd for LexerToken {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        let &LexerToken(ref index, _)       = self;
+        let &LexerToken(ref other_index, _) = other;
+
+        index.partial_cmp(other_index)
+    }
+}
+
+///
 /// Tool that reads a string and generates a lexed array of matches
 ///
 pub struct StringLexingTool {
-    matcher: SymbolRangeDfa<char, String>
+    matcher: SymbolRangeDfa<char, LexerToken>
 }
 
 impl StringLexingTool {
@@ -442,10 +469,16 @@ impl StringLexingTool {
     ///
     pub fn from_lex_tool_input(lex_defn: &LexToolInput) -> StringLexingTool {
         // Generate a token matcher from the lexer
-        let mut token_matcher = TokenMatcher::new();
+        let mut token_matcher   = TokenMatcher::new();
+        let mut index           = 0;
 
         for symbol in lex_defn.symbols.iter() {
-            token_matcher.add_pattern(LexTool::pattern_for_string(&symbol.match_rule), symbol.symbol_name.clone());
+            let pattern = LexTool::pattern_for_string(&symbol.match_rule);
+            let token   = LexerToken(index, symbol.symbol_name.clone());
+
+            token_matcher.add_pattern(pattern, token);
+
+            index += 1;
         }
 
         let prepared = token_matcher.prepare_to_match();
@@ -462,8 +495,10 @@ impl StringLexingTool {
         let mut result      = vec![];
 
         while let Some((range, token)) = tokenizer.next() {
+            let LexerToken(_, token_string) = token;
+
             result.push(LexerMatch { 
-                token:      token,
+                token:      token_string,
                 matched:    String::from(&string[range.clone()]),
                 start:      range.start as i32,
                 end:        range.end as i32
