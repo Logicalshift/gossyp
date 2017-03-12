@@ -481,6 +481,7 @@ impl StringLexingTool {
             index += 1;
         }
 
+        // TODO: Concordance's SymbolRangeDfa is pretty memory inefficient (or poorly optimised) and uses up quite a bit of memory
         let prepared = token_matcher.prepare_to_match();
 
         // This is what we use in the lexing tool
