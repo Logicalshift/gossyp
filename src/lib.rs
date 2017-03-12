@@ -6,3 +6,4 @@ extern crate concordance;
 extern crate silkthread_base;
 
 pub mod lex;
+pub mod script;
