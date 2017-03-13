@@ -1,4 +1,5 @@
 pub mod lex_script_tool;
+pub mod script;
 pub mod tool;
 
 use self::lex_script_tool::*;
