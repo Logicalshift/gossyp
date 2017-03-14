@@ -435,7 +435,7 @@ impl Tool for LexTool {
 ///
 /// Lexer token providing an ordering and the name of the token that should be generated
 ///
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 struct LexerToken (i32, String);
 
 impl Ord for LexerToken {
