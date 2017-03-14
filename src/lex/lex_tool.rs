@@ -6,7 +6,6 @@ use std::result::Result;
 use std::error::Error;
 use std::char;
 use std::iter::*;
-use std::cmp::*;
 
 use serde_json::*;
 
@@ -433,34 +432,14 @@ impl Tool for LexTool {
 }
 
 ///
-/// Lexer token providing an ordering and the name of the token that should be generated
-///
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
-struct LexerToken (i32, String);
-
-impl Ord for LexerToken {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let &LexerToken(ref index, _)       = self;
-        let &LexerToken(ref other_index, _) = other;
-
-        index.cmp(other_index)
-    }
-}
-
-impl PartialOrd for LexerToken {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let &LexerToken(ref index, _)       = self;
-        let &LexerToken(ref other_index, _) = other;
-
-        index.partial_cmp(other_index)
-    }
-}
-
-///
 /// Tool that reads a string and generates a lexed array of matches
 ///
 pub struct StringLexingTool {
-    matcher: SymbolRangeDfa<char, LexerToken>
+    /// Matches up symbols
+    matcher: SymbolRangeDfa<char, usize>,
+
+    /// Matches IDs from the matcher with strings to return in the results
+    symbol_names: Vec<String>
 }
 
 impl StringLexingTool {
@@ -471,12 +450,14 @@ impl StringLexingTool {
         // Generate a token matcher from the lexer
         let mut token_matcher   = TokenMatcher::new();
         let mut index           = 0;
+        let mut symbol_names    = vec![];
 
         for symbol in lex_defn.symbols.iter() {
             let pattern = LexTool::pattern_for_string(&symbol.match_rule);
-            let token   = LexerToken(index, symbol.symbol_name.clone());
+            let token   = index;
 
             token_matcher.add_pattern(pattern, token);
+            symbol_names.push(symbol.symbol_name.clone());
 
             index += 1;
         }
@@ -485,7 +466,7 @@ impl StringLexingTool {
         let prepared = token_matcher.prepare_to_match();
 
         // This is what we use in the lexing tool
-        StringLexingTool { matcher: prepared }
+        StringLexingTool { matcher: prepared, symbol_names: symbol_names }
     }
 
     ///
@@ -496,7 +477,7 @@ impl StringLexingTool {
         let mut result      = vec![];
 
         while let Some((range, token)) = tokenizer.next() {
-            let LexerToken(_, token_string) = token;
+            let token_string = self.symbol_names[token].clone();
 
             result.push(LexerMatch { 
                 token:      token_string,
