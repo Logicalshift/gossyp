@@ -68,6 +68,11 @@ mod test {
     }
 
     #[test]
+    fn can_lex_identifier_with_hyphen() {
+        assert!(lex_tokens("something-something") == vec![ String::from("Identifier") ]);
+    }
+
+    #[test]
     fn can_lex_let_keyword() {
         assert!(lex_tokens("let") == vec![ String::from("let") ]);
     }
