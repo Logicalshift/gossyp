@@ -464,6 +464,27 @@ impl StringLexingTool {
 
         // TODO: Concordance's SymbolRangeDfa is pretty memory inefficient (or poorly optimised) and uses up quite a bit of memory
         let prepared = token_matcher.prepare_to_match();
+        
+        println!("{}", prepared.description());
+
+        let mut num_overlapping = 0;
+
+        for state in 0..prepared.count_states() {
+            let transitions = prepared.get_transitions_for_state(state);
+
+            if transitions.len() > 0 {
+                for index in 0..transitions.len()-1 {
+                    let &(ref this_range, ref this_state) = &transitions[index];
+                    let &(ref next_range, ref next_state) = &transitions[index+1];
+
+                    if this_range.highest.next() >= next_range.lowest && this_state == next_state {
+                        num_overlapping += 1;
+                    }
+                }
+            }
+        }
+
+        println!("{} overlapping states found", num_overlapping);
 
         // This is what we use in the lexing tool
         StringLexingTool { matcher: prepared, symbol_names: symbol_names }
