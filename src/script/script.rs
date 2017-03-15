@@ -1,7 +1,99 @@
 
 use super::super::lex::*;
 
-#[derive(Serialize, Deserialize)]
+///
+/// Tokens that can exist in a script
+///
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum ScriptLexerToken {
+    Unknown,
+
+    Identifier, 
+    String,
+    Number,
+    HexNumber,
+
+    Newline,
+    Whitespace,
+    Comment,
+
+    Let,
+    Var,
+    If,
+    Using,
+    While,
+    Do,
+    Loop,
+    For,
+    In,
+    Def,
+
+    Symbol(String)
+}
+
+///
+/// Token matched from the script
+///
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
+pub struct ScriptToken {
+    pub token:      ScriptLexerToken,
+    pub start:      i32,
+    pub end:        i32,
+    pub matched:    String
+}
+
+impl ScriptToken {
+    ///
+    /// Creates a new script token
+    ///
+    pub fn new(lexer_token: ScriptLexerToken, start: i32, end: i32, matched: String) -> ScriptToken {
+        ScriptToken { 
+            token:      lexer_token,
+            start:      start,
+            end:        end,
+            matched:    matched
+        }
+    }
+
+    ///
+    /// Creates a new script token from a generic `LexerMatch` object
+    ///
+    pub fn from_lexer_match(lexer_match: &LexerMatch) -> ScriptToken {
+        let token: &str     = &lexer_match.token;
+        let script_token    = match token {
+            "let"           => ScriptLexerToken::Let,
+            "var"           => ScriptLexerToken::Var,
+            "if"            => ScriptLexerToken::If,
+            "using"         => ScriptLexerToken::Using,
+            "while"         => ScriptLexerToken::While,
+            "do"            => ScriptLexerToken::Do,
+            "loop"          => ScriptLexerToken::Loop,
+            "for"           => ScriptLexerToken::For,
+            "in"            => ScriptLexerToken::In,
+            "def"           => ScriptLexerToken::Def,
+
+            "." | "+" | "-" | "*" | "/" | "|" | "&" | "=" | "==" | "!=" | ">" | "<" | "<=" | ">=" | "!" | "?" | "||" | "&&" | "(" | ")" | "{" | "}" | "[" | "]"
+                            => ScriptLexerToken::Symbol(lexer_match.token.clone()),
+            
+            "String"        => ScriptLexerToken::String,
+            "Number"        => ScriptLexerToken::Number,
+            "HexNumber"     => ScriptLexerToken::HexNumber,
+            "Identifier"    => ScriptLexerToken::Identifier,
+            "Newline"       => ScriptLexerToken::Newline,
+            "Whitespace"    => ScriptLexerToken::Whitespace,
+            "Comment"       => ScriptLexerToken::Comment,
+            
+            _               => ScriptLexerToken::Unknown
+        };
+
+        ScriptToken::new(script_token, lexer_match.start, lexer_match.end, lexer_match.matched.clone())
+    }
+}
+
+///
+/// Representation of a parsed script
+///
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Script {
     /// Run a command, with parameters
     RunCommand(Expression),
@@ -10,13 +102,13 @@ pub enum Script {
     Sequence(Vec<Script>),
 
     /// let a = b 
-    Let(LexerMatch, Expression),
+    Let(ScriptToken, Expression),
 
     /// var a = b
-    Var(LexerMatch, Expression),
+    Var(ScriptToken, Expression),
 
     /// a = b
-    Assign(LexerMatch, Expression),
+    Assign(ScriptToken, Expression),
 
     /// loop { stuff }
     Loop(Box<Script>),
@@ -28,19 +120,22 @@ pub enum Script {
     Using(Expression, Box<Script>),
 
     /// def tool pattern { stuff }
-    Def(LexerMatch, Expression, Box<Script>)
+    Def(ScriptToken, Expression, Box<Script>)
 }
 
-#[derive(Serialize, Deserialize)]
+///
+/// Representation of an expression from the script
+///
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Expression {
 
     // -- Constant values and data structures
 
     /// "Foo"
-    String(LexerMatch),
+    String(ScriptToken),
 
     /// 12.3
-    Number(LexerMatch),
+    Number(ScriptToken),
 
     /// [ foo, bar, baz ]
     Array(Vec<Expression>),
@@ -54,7 +149,7 @@ pub enum Expression {
     // -- Evaluatable expressions
 
     /// some-identifier
-    Identifier(LexerMatch),
+    Identifier(ScriptToken),
 
     /// a[b]
     Index(Box<(Expression, Expression)>),
