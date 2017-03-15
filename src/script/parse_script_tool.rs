@@ -15,6 +15,12 @@ pub struct ParseError {
 pub struct ParseScriptTool {
 }
 
+impl ParseError {
+    pub fn new() -> ParseError {
+        ParseError { }
+    }
+}
+
 ///
 /// Returns true if a token is considered syntax (gets returned from lookahead)
 ///
@@ -49,7 +55,29 @@ fn lookahead<'a>(input: &'a [ScriptToken]) -> Option<(&'a ScriptToken, &'a [Scri
 /// Parses a statement
 ///
 pub fn parse_statement<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
-    unimplemented!();
+    if let Some((lookahead, remainder)) = lookahead(input) {
+        match lookahead.token {
+            // Newlines are ignored
+            ScriptLexerToken::Newline       => parse_statement(remainder),
+
+            ScriptLexerToken::Let           => parse_let(remainder),
+            ScriptLexerToken::Var           => parse_var(remainder),
+            ScriptLexerToken::Def           => parse_def(remainder),
+            ScriptLexerToken::If            => parse_if(remainder),
+            ScriptLexerToken::Using         => parse_using(remainder),
+            ScriptLexerToken::While         => parse_while(remainder),
+            ScriptLexerToken::Loop          => parse_loop(remainder),
+            ScriptLexerToken::For           => parse_for(remainder),
+
+            ScriptLexerToken::Identifier    => parse_command(input),
+
+            // Unrecognised token
+            _ => Err(ParseError::new())
+        }
+    } else {
+        // EOF
+        Err(ParseError::new())
+    }
 }
 
 ///
@@ -59,6 +87,38 @@ pub fn parse_statement<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [Scr
 ///
 pub fn parse_command<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
     unimplemented!();
+}
+
+pub fn parse_let<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_var<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_def<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_if<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_using<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_while<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_loop<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
+}
+
+pub fn parse_for<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!()
 }
 
 impl ParseScriptTool {
