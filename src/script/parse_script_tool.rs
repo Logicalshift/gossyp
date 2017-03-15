@@ -1,7 +1,6 @@
 use std::result::Result;
 
 use super::script::*;
-use super::super::lex::lex_tool::*;
 
 ///
 /// Represents a parse error
@@ -17,11 +16,25 @@ pub struct ParseScriptTool {
 }
 
 ///
-/// Parses a parse_command
+/// Looks ahead to the next syntactically relevant lexer match
+///
+fn lookahead<'a>(input: &'a [ScriptToken]) -> (Option<ScriptToken>, &'a [ScriptToken]) {
+    unimplemented!();
+}
+
+///
+/// Parses a statement
+///
+pub fn parse_statement<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    unimplemented!();
+}
+
+///
+/// Parses a command
 ///
 /// Syntax '<expression>', '<expression> <expression>'
 ///
-pub fn parse_command<'a>(input: &'a [LexerMatch]) -> Result<(Script, &'a [LexerMatch]), ParseError> {
+pub fn parse_command<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
     unimplemented!();
 }
 
