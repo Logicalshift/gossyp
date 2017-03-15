@@ -16,10 +16,33 @@ pub struct ParseScriptTool {
 }
 
 ///
-/// Looks ahead to the next syntactically relevant lexer match
+/// Returns true if a token is considered syntax (gets returned from lookahead)
 ///
-fn lookahead<'a>(input: &'a [ScriptToken]) -> (Option<ScriptToken>, &'a [ScriptToken]) {
-    unimplemented!();
+fn is_syntax(token: &ScriptToken) -> bool {
+    match token.token {
+        ScriptLexerToken::Whitespace    |
+        ScriptLexerToken::Comment       => false,
+
+        _                               => true
+    }
+}
+
+///
+/// Looks ahead to the next syntactically relevant lexer match (and returns the tokens after it)
+///
+fn lookahead<'a>(input: &'a [ScriptToken]) -> Option<(&'a ScriptToken, &'a [ScriptToken])> {
+    let mut index   = 0;
+    let len         = input.len();
+
+    loop {
+        if index >= len {
+            return None;
+        } else if is_syntax(&input[index]) {
+            return Some((&input[index], &input[index+1..len]));
+        }
+
+        index += 1;
+    }
 }
 
 ///
