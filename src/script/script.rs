@@ -2,7 +2,7 @@
 use super::super::lex::*;
 
 #[derive(Serialize, Deserialize)]
-enum Script {
+pub enum Script {
     /// Run a command, with parameters
     RunCommand(Expression),
 
