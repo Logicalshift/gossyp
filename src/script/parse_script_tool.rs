@@ -89,6 +89,27 @@ pub fn parse_command<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [Scrip
     unimplemented!();
 }
 
+///
+/// Parses an Expression
+///
+pub fn parse_expression<'a>(input: &'a [ScriptToken]) -> Result<(Expression, &'a [ScriptToken]), ParseError> {
+    if let Some((lookahead, remainder)) = lookahead(input) {
+        let expr1 = match lookahead.token {
+            ScriptLexerToken::Identifier    => Ok((Expression::Identifier(lookahead.clone()), remainder)),
+            ScriptLexerToken::Number        |
+            ScriptLexerToken::HexNumber     => Ok((Expression::Number(lookahead.clone()), remainder)),
+            ScriptLexerToken::String        => Ok((Expression::String(lookahead.clone()), remainder)),
+
+            _ => Err(ParseError::new())
+        };
+
+        expr1
+    } else {
+        // EOF
+        Err(ParseError::new())
+    }
+}
+
 pub fn parse_let<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
     unimplemented!()
 }
