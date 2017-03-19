@@ -196,8 +196,14 @@ impl<'a> ParseState<'a> {
     /// Parses an Expression
     ///
     pub fn parse_expression(&mut self) -> Result<Expression, ParseError> {
-        // Get the LHS of the expression
-        let left_expr = self.parse_simple_expression();
+        let left_expr = if self.lookahead_is(ScriptLexerToken::Symbol(String::from("["))) {
+            self.parse_array_expression()
+
+        } else {
+            // Simple expression
+            self.parse_simple_expression()
+
+        };
 
         // Look for a RHS
         left_expr.and_then(|left_expr| self.parse_expression_rhs(left_expr))
@@ -231,6 +237,13 @@ impl<'a> ParseState<'a> {
             Ok(left_expr)
 
         }
+    }
+
+    ///
+    /// Parses an array expression
+    ///
+    pub fn parse_array_expression(&mut self) -> Result<Expression, ParseError> {
+        unimplemented!()
     }
 
     ///
@@ -413,6 +426,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Number(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_array_parameter() {
+        let statement   = "some-command [ 1, 2, 3 ]";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
     }
 
     #[test]
