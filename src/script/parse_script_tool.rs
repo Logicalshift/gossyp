@@ -73,7 +73,12 @@ impl<'a> ParseState<'a> {
             }
         } else {
             // End of file
-            false
+            if token == ScriptLexerToken::EndOfFile {
+                // With lookahead_is we can look for the end of file (but we can't accept it because there's no token data associated with it)
+                true
+            } else {
+                false
+            }
         }
     }
 
@@ -148,7 +153,7 @@ impl<'a> ParseState<'a> {
         self.parse_expression().and_then(move |command_expression| {
             // Followed by arguments (or an end-of-expression marker)
             if self.accept(ScriptLexerToken::Newline).is_some()
-               || self.accept(ScriptLexerToken::EndOfFile).is_some() {
+               || self.lookahead_is(ScriptLexerToken::EndOfFile) {
                 // Newline or EOF ends a command
                 Ok(Script::RunCommand(command_expression, None))
 
@@ -160,12 +165,12 @@ impl<'a> ParseState<'a> {
                 }).and_then(move |command| {
                     // Command must be followed by a newline
                     if self.accept(ScriptLexerToken::Newline).is_some()
-                       || self.accept(ScriptLexerToken::EndOfFile).is_some() {
+                       || self.lookahead_is(ScriptLexerToken::EndOfFile) {
                         Ok(command)
                     } else {
                         Err(ParseError::new())
                     }
-                    
+
                 })
 
             }
