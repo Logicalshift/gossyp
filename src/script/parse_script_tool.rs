@@ -110,7 +110,7 @@ impl<'a> ParseState<'a> {
     ///
     /// Parses a statement
     ///
-    pub fn parse_statement(&mut self) -> Result<Script, ParseError> {
+    fn parse_statement(&mut self) -> Result<Script, ParseError> {
         if self.accept(ScriptLexerToken::Newline).is_some() {
             // Newlines are ignored
             self.parse_statement()
@@ -163,7 +163,7 @@ impl<'a> ParseState<'a> {
     ///
     /// Syntax '<expression>', '<expression> <expression>'
     ///
-    pub fn parse_command(&mut self) -> Result<Script, ParseError> {
+    fn parse_command(&mut self) -> Result<Script, ParseError> {
         // Starts with an expression specifying the command to run
         self.parse_expression().and_then(move |command_expression| {
             // Followed by arguments (or an end-of-expression marker)
@@ -195,7 +195,7 @@ impl<'a> ParseState<'a> {
     ///
     /// Parses an Expression
     ///
-    pub fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_expression(&mut self) -> Result<Expression, ParseError> {
         let left_expr = if self.lookahead_is(ScriptLexerToken::Symbol(String::from("["))) {
             self.parse_array_expression()
 
@@ -212,7 +212,7 @@ impl<'a> ParseState<'a> {
     ///
     /// Parses the RHS of an expression (if there is one)
     ///
-    pub fn parse_expression_rhs(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
+    fn parse_expression_rhs(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
         if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
             // 'a.b' field access
             let right_expr = self.parse_expression();
@@ -240,16 +240,56 @@ impl<'a> ParseState<'a> {
     }
 
     ///
+    /// Skips any newlines
+    ///
+    fn skip_newlines(&mut self) {
+        while self.accept(ScriptLexerToken::Newline).is_some() { }
+    }
+
+    ///
     /// Parses an array expression
     ///
-    pub fn parse_array_expression(&mut self) -> Result<Expression, ParseError> {
-        unimplemented!()
+    fn parse_array_expression(&mut self) -> Result<Expression, ParseError> {
+        // Opening '['
+        if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_none() {
+            // Not an array
+            return Err(ParseError::new());
+        }
+
+        let mut components = vec![];
+
+        // Array goes until the final ']'
+        while self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_none() {
+            // Read the next component
+            let next_component = self.parse_expression();
+            
+            // Add to the components
+            match next_component {
+                Err(failure)    => return Err(failure),
+                Ok(component)   => components.push(component)
+            };
+
+            // Components separated by commas. Newlines are ignored
+            self.skip_newlines();
+
+            // Comma or allow for ']'
+            if self.accept(ScriptLexerToken::Symbol(String::from(","))).is_none()
+                && !self.lookahead_is(ScriptLexerToken::Symbol(String::from("]"))) {
+                // Expected ','
+                return Err(ParseError::new());
+            }
+
+            // Newlines allowed after the ','
+            self.skip_newlines();
+        }
+
+        Ok(Expression::Array(components))
     }
 
     ///
     /// Parses a simple expression
     ///
-    pub fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
         if self.accept(ScriptLexerToken::Newline).is_some() {
             // Ignore newlines within an expression
             self.parse_expression()
@@ -277,35 +317,35 @@ impl<'a> ParseState<'a> {
         }
     }
 
-    pub fn parse_let(&mut self) -> Result<Script, ParseError> {
+    fn parse_let(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_var(&mut self) -> Result<Script, ParseError> {
+    fn parse_var(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_def(&mut self) -> Result<Script, ParseError> {
+    fn parse_def(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_if(&mut self) -> Result<Script, ParseError> {
+    fn parse_if(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_using(&mut self) -> Result<Script, ParseError> {
+    fn parse_using(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_while(&mut self) -> Result<Script, ParseError> {
+    fn parse_while(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_loop(&mut self) -> Result<Script, ParseError> {
+    fn parse_loop(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_for(&mut self) -> Result<Script, ParseError> {
+    fn parse_for(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 }
@@ -346,7 +386,7 @@ impl ParseScriptTool {
             }
 
             // Swallow any trailing newlines
-            while parser.accept(ScriptLexerToken::Newline).is_some() { }
+            parser.skip_newlines();
         }
 
         Ok(result)
@@ -429,8 +469,50 @@ mod test {
     }
 
     #[test]
-    fn can_parse_command_statement_with_array_parameter() {
+    fn can_parse_command_statement_with_empty_array_parameter() {
+        let statement   = "some-command [ ]";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_single_array_parameter() {
+        let statement   = "some-command [ 1 ]";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_multi_array_parameter() {
         let statement   = "some-command [ 1, 2, 3 ]";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_complex_array_parameter() {
+        let statement   = "some-command [ some-command.access, indexed[2], 3 ]";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
