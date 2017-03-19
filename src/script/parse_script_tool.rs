@@ -109,34 +109,44 @@ impl<'a> ParseState<'a> {
         if self.accept(ScriptLexerToken::Newline).is_some() {
             // Newlines are ignored
             self.parse_statement()
+
         } else if self.accept(ScriptLexerToken::Let).is_some() {
-            // self.parse_let()
-            unimplemented!()
+            // let identifier = expression
+            self.parse_let()
+
         } else if self.accept(ScriptLexerToken::Var).is_some() {
-            // self.parse_var()
-            unimplemented!()
+            // var identifier = expression
+            self.parse_var()
+
         } else if self.accept(ScriptLexerToken::Def).is_some() {
-            // self.parse_def()
-            unimplemented!()
+            // def fn args { statements }
+            self.parse_def()
+
         } else if self.accept(ScriptLexerToken::If).is_some() {
-            // self.parse_if()
-            unimplemented!()
+            // if expression { statements }
+            self.parse_if()
+
         } else if self.accept(ScriptLexerToken::Using).is_some() {
-            // self.parse_using()
-            unimplemented!()
+            // using expression { statements }
+            self.parse_using()
+
         } else if self.accept(ScriptLexerToken::While).is_some() {
-            // self.parse_while()
-            unimplemented!()
+            // while expression { statements }
+            self.parse_while()
+
         } else if self.accept(ScriptLexerToken::Loop).is_some() {
-            // self.parse_loop()
-            unimplemented!()
+            // loop { statements }
+            self.parse_loop()
+
         } else if self.accept(ScriptLexerToken::For).is_some() {
-            // self.parse_for()
-            unimplemented!()
+            // for identifier in expression { statements }
+            self.parse_for()
+
         } else if self.lookahead_is(ScriptLexerToken::Identifier) {
             // While commands are either <Expression> or <Expression> <Expression>, we
             // force the first expression to be an identifier at the moment
             self.parse_command()
+
         } else {
             // Unrecognised token
             Err(ParseError::new())
@@ -208,39 +218,37 @@ impl<'a> ParseState<'a> {
         }
     }
 
-    /*
-    pub fn parse_let<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_let(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_var<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_var(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_def<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_def(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_if<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_if(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_using<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_using(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_while<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_while(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_loop<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_loop(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
 
-    pub fn parse_for<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
+    pub fn parse_for(&mut self) -> Result<Script, ParseError> {
         unimplemented!()
     }
-    */
 }
 
 impl ParseScriptTool {
