@@ -196,7 +196,7 @@ impl<'a> ParseState<'a> {
     /// Parses an Expression
     ///
     fn parse_expression(&mut self) -> Result<Expression, ParseError> {
-        let left_expr = if self.lookahead_is(ScriptLexerToken::Symbol(String::from("["))) {
+        let left_expr = if self.lookahead_is(ScriptLexerToken::symbol("[")) {
             self.parse_array_expression()
 
         } else {
@@ -213,18 +213,18 @@ impl<'a> ParseState<'a> {
     /// Parses the RHS of an expression (if there is one)
     ///
     fn parse_expression_rhs(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
-        if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
+        if self.accept(ScriptLexerToken::symbol(".")).is_some() {
             // 'a.b' field access
             let right_expr = self.parse_expression();
 
             right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
 
-        } else if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_some() {
+        } else if self.accept(ScriptLexerToken::symbol("[")).is_some() {
             // a[b] indexing
             let right_expr = self.parse_expression();
 
             right_expr.and_then(|right_expr| {
-                if self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_some() {
+                if self.accept(ScriptLexerToken::symbol("]")).is_some() {
                     // Got all of a[b]
                     Ok(Expression::Index(Box::new((left_expr, right_expr))))
                 } else {
@@ -251,7 +251,7 @@ impl<'a> ParseState<'a> {
     ///
     fn parse_array_expression(&mut self) -> Result<Expression, ParseError> {
         // Opening '['
-        if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_none() {
+        if self.accept(ScriptLexerToken::symbol("[")).is_none() {
             // Not an array
             return Err(ParseError::new());
         }
@@ -259,7 +259,7 @@ impl<'a> ParseState<'a> {
         let mut components = vec![];
 
         // Array goes until the final ']'
-        while self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_none() {
+        while self.accept(ScriptLexerToken::symbol("]")).is_none() {
             // Read the next component
             let next_component = self.parse_expression();
             
@@ -272,9 +272,9 @@ impl<'a> ParseState<'a> {
             // Components separated by commas. Newlines are ignored
             self.skip_newlines();
 
-            // Comma or allow for ']'
-            if self.accept(ScriptLexerToken::Symbol(String::from(","))).is_none()
-                && !self.lookahead_is(ScriptLexerToken::Symbol(String::from("]"))) {
+            // Followed by a comma or the closing ']'
+            if self.accept(ScriptLexerToken::symbol(",")).is_none()
+                && !self.lookahead_is(ScriptLexerToken::symbol("]")) {
                 // Expected ','
                 return Err(ParseError::new());
             }

@@ -32,6 +32,16 @@ pub enum ScriptLexerToken {
     Symbol(String)
 }
 
+impl ScriptLexerToken {
+    ///
+    /// Shortcut for generating a symbol token
+    ///
+    #[inline]
+    pub fn symbol(sym: &str) -> ScriptLexerToken {
+        ScriptLexerToken::Symbol(String::from(sym))
+    }
+}
+
 ///
 /// Token matched from the script
 ///
