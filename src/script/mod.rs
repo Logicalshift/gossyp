@@ -4,6 +4,7 @@ pub mod script;
 pub mod tool;
 
 use self::lex_script_tool::*;
+use self::parse_script_tool::*;
 use silkthread_base::*;
 use silkthread_base::basic::*;
 
@@ -16,7 +17,8 @@ pub struct ScriptTools {
 impl ToolSet for ScriptTools{
     fn create_tools(self, _: &Environment) -> Vec<(String, Box<Tool>)> {
         vec![
-            (String::from(tool::LEX_SCRIPT), Box::new(create_lex_script_tool()))
+            (String::from(tool::LEX_SCRIPT), Box::new(create_lex_script_tool())),
+            (String::from(tool::PARSE_SCRIPT), ParseScriptTool::new_tool())
         ]
     }
 }
