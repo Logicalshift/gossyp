@@ -45,6 +45,10 @@
         "match_rule":  "\\."
     },
     {
+        "symbol_name": ",",
+        "match_rule":  ","
+    },
+    {
         "symbol_name": "+",
         "match_rule":  "\\+"
     },
