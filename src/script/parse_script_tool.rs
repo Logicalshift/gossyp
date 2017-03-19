@@ -200,7 +200,8 @@ impl<'a> ParseState<'a> {
     ///
     fn parse_expression(&mut self) -> Result<Expression, ParseError> {
         let left_expr = if self.lookahead_is(ScriptLexerToken::symbol("[")) {
-            self.parse_array_expression()
+            self.parse_array_expression(ScriptLexerToken::symbol("["), ScriptLexerToken::symbol("]"))
+                .map(|x| Expression::Array(x))
 
         } else {
             // Simple expression
@@ -252,9 +253,9 @@ impl<'a> ParseState<'a> {
     ///
     /// Parses an array expression
     ///
-    fn parse_array_expression(&mut self) -> Result<Expression, ParseError> {
+    fn parse_array_expression(&mut self, open_bracket: ScriptLexerToken, close_bracket: ScriptLexerToken) -> Result<Vec<Expression>, ParseError> {
         // Opening '['
-        if self.accept(ScriptLexerToken::symbol("[")).is_none() {
+        if self.accept(open_bracket.clone()).is_none() {
             // Not an array
             return Err(ParseError::new(self, "Not an array"));
         }
@@ -262,7 +263,7 @@ impl<'a> ParseState<'a> {
         let mut components = vec![];
 
         // Array goes until the final ']'
-        while self.accept(ScriptLexerToken::symbol("]")).is_none() {
+        while self.accept(close_bracket.clone()).is_none() {
             // Read the next component
             let next_component = self.parse_expression();
             
@@ -277,7 +278,7 @@ impl<'a> ParseState<'a> {
 
             // Followed by a comma or the closing ']'
             if self.accept(ScriptLexerToken::symbol(",")).is_none()
-                && !self.lookahead_is(ScriptLexerToken::symbol("]")) {
+                && !self.lookahead_is(close_bracket.clone()) {
                 // Expected ','
                 return Err(ParseError::new(self, "Expected ',' or ']'"));
             }
@@ -286,7 +287,7 @@ impl<'a> ParseState<'a> {
             self.skip_newlines();
         }
 
-        Ok(Expression::Array(components))
+        Ok(components)
     }
 
     ///
