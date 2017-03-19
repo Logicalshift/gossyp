@@ -103,6 +103,16 @@ mod test {
     }
 
     #[test]
+    fn can_lex_simple_string() {
+        assert!(lex_tokens("\"Foo\"") == vec![ String::from("String") ]);
+    }
+
+    #[test]
+    fn can_lex_two_strings() {
+        assert!(lex_tokens("\"Foo\"\"Bar\"") == vec![ String::from("String"), String::from("String") ]);
+    }
+
+    #[test]
     fn can_lex_longer_number() {
         assert!(lex_tokens("123") == vec![ String::from("Number") ]);
     }
