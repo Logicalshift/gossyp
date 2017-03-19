@@ -1,11 +1,15 @@
 use std::result::Result;
 
+use silkthread_base::*;
+use silkthread_base::basic::*;
+
 use super::super::lex::lex_tool::*;
 use super::script::*;
 
 ///
 /// Represents a parse error
 ///
+#[derive(Serialize, Deserialize)]
 pub struct ParseError {
 
 }
@@ -254,10 +258,12 @@ impl<'a> ParseState<'a> {
 
 impl ParseScriptTool {
     ///
-    /// Creates a new script parsing tool
+    /// Creates a new tool from the parse script tool
     ///
-    pub fn new() -> ParseScriptTool {
-        ParseScriptTool { }
+    pub fn new_tool() -> Box<Tool> {
+        Box::new(make_tool(move |script: Vec<LexerMatch>| -> Result<Vec<Script>, ParseError> {
+            ParseScriptTool::parse(&script)
+        }))
     }
 
     ///
