@@ -196,6 +196,27 @@ impl<'a> ParseState<'a> {
     /// Parses an Expression
     ///
     pub fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+        // Get the LHS of the expression
+        let left_expr = self.parse_simple_expression();
+
+        // Look for a RHS
+        left_expr.and_then(|left_expr| {
+            if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
+                let right_expr = self.parse_expression();
+
+                right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
+
+            } else {
+                Ok(left_expr)
+                
+            }
+        })
+    }
+
+    ///
+    /// Parses a simple expression
+    ///
+    pub fn parse_simple_expression(&mut self) -> Result<Expression, ParseError> {
         if self.accept(ScriptLexerToken::Newline).is_some() {
             // Ignore newlines within an expression
             self.parse_expression()
@@ -330,6 +351,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), None) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_field_access() {
+        let statement   = "some-command.some-field";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_), None) => true, _ => false});
     }
 
     #[test]
