@@ -21,7 +21,7 @@ pub struct ParseScriptTool {
 }
 
 impl ParseError {
-    fn new<'a>(state: &ParseState<'a>, message: &str) -> ParseError {
+    fn new<'a>(_state: &ParseState<'a>, message: &str) -> ParseError {
         ParseError { message: String::from(message) }
     }
 }
