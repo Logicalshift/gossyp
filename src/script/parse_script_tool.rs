@@ -200,32 +200,37 @@ impl<'a> ParseState<'a> {
         let left_expr = self.parse_simple_expression();
 
         // Look for a RHS
-        left_expr.and_then(|left_expr| {
-            if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
-                // 'a.b' field access
-                let right_expr = self.parse_expression();
+        left_expr.and_then(|left_expr| self.parse_expression_rhs(left_expr))
+    }
 
-                right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
+    ///
+    /// Parses the RHS of an expression (if there is one)
+    ///
+    pub fn parse_expression_rhs(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
+        if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
+            // 'a.b' field access
+            let right_expr = self.parse_expression();
 
-            } else if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_some() {
-                // a[b] indexing
-                let right_expr = self.parse_expression();
+            right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
 
-                right_expr.and_then(|right_expr| {
-                    if self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_some() {
-                        // Got all of a[b]
-                        Ok(Expression::Index(Box::new((left_expr, right_expr))))
-                    } else {
-                        // Missing ']'
-                        Err(ParseError::new())
-                    }
-                })
+        } else if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_some() {
+            // a[b] indexing
+            let right_expr = self.parse_expression();
 
-            } else {
-                Ok(left_expr)
+            right_expr.and_then(|right_expr| {
+                if self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_some() {
+                    // Got all of a[b]
+                    Ok(Expression::Index(Box::new((left_expr, right_expr))))
+                } else {
+                    // Missing ']'
+                    Err(ParseError::new())
+                }
+            })
 
-            }
-        })
+        } else {
+            Ok(left_expr)
+
+        }
     }
 
     ///
