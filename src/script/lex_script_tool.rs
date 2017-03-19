@@ -118,6 +118,11 @@ mod test {
     }
 
     #[test]
+    fn can_lex_strings_with_other_quote_chars() {
+        assert!(lex_tokens("\"Foo\\n\"") == vec![ String::from("String") ]);
+    }
+
+    #[test]
     fn can_lex_longer_number() {
         assert!(lex_tokens("123") == vec![ String::from("Number") ]);
     }
