@@ -181,24 +181,31 @@ impl<'a> ParseState<'a> {
     /// Parses an Expression
     ///
     pub fn parse_expression(&mut self) -> Result<Expression, ParseError> {
-        unimplemented!()
-        /*
-        if let Some((lookahead1, remainder1)) = lookahead(input) {
-            let expr1 = match lookahead1.token {
-                ScriptLexerToken::Identifier    => Ok((Expression::Identifier(lookahead1.clone()), remainder)),
-                ScriptLexerToken::Number        |
-                ScriptLexerToken::HexNumber     => Ok((Expression::Number(lookahead1.clone()), remainder)),
-                ScriptLexerToken::String        => Ok((Expression::String(lookahead1.clone()), remainder)),
+        if self.accept(ScriptLexerToken::Newline).is_some() {
+            // Ignore newlines within an expression
+            self.parse_expression()
 
-                _ => Err(ParseError::new())
-            };
+        } else if let Some(identifier) = self.accept(ScriptLexerToken::Identifier) {
+            // Simple expression
+            Ok(Expression::Identifier(identifier.clone()))
 
-            expr1
+        } else if let Some(number) = self.accept(ScriptLexerToken::Number) {
+            // Simple expression
+            Ok(Expression::Number(number.clone()))
+
+        } else if let Some(number) = self.accept(ScriptLexerToken::HexNumber) {
+            // Hex numbers work like normal numbers
+            Ok(Expression::Number(number.clone()))
+
+        } else if let Some(string) = self.accept(ScriptLexerToken::String) {
+            // Simple expression
+            Ok(Expression::String(string.clone()))
+
         } else {
-            // EOF
+            // Syntax error
             Err(ParseError::new())
+
         }
-        */
     }
 
     /*
