@@ -202,13 +202,28 @@ impl<'a> ParseState<'a> {
         // Look for a RHS
         left_expr.and_then(|left_expr| {
             if self.accept(ScriptLexerToken::Symbol(String::from("."))).is_some() {
+                // 'a.b' field access
                 let right_expr = self.parse_expression();
 
                 right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
 
+            } else if self.accept(ScriptLexerToken::Symbol(String::from("["))).is_some() {
+                // a[b] indexing
+                let right_expr = self.parse_expression();
+
+                right_expr.and_then(|right_expr| {
+                    if self.accept(ScriptLexerToken::Symbol(String::from("]"))).is_some() {
+                        // Got all of a[b]
+                        Ok(Expression::Index(Box::new((left_expr, right_expr))))
+                    } else {
+                        // Missing ']'
+                        Err(ParseError::new())
+                    }
+                })
+
             } else {
                 Ok(left_expr)
-                
+
             }
         })
     }
@@ -365,6 +380,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_), None) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_array_indexing() {
+        let statement   = "some-command[0]";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Index(_), None) => true, _ => false});
     }
 
     #[test]
