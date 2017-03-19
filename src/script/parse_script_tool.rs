@@ -214,6 +214,8 @@ impl<'a> ParseState<'a> {
                         Expression::Tuple(tuple_entries)
                     }
                 })
+        } else if self.lookahead_is(ScriptLexerToken::symbol("{")) {
+            self.parse_map_expression()
 
         } else {
             // Simple expression
@@ -300,6 +302,59 @@ impl<'a> ParseState<'a> {
         }
 
         Ok(components)
+    }
+
+    ///
+    /// Parses a map expression ('{ foo: bar ... }')
+    ///
+    fn parse_map_expression(&mut self) -> Result<Expression, ParseError> {
+        // Opening '{'
+        if self.accept(ScriptLexerToken::symbol("{")).is_none() {
+            // Not an array
+            return Err(ParseError::new(self, "Not a map"));
+        }
+
+        let mut components = vec![];
+
+        // Array goes until the final '}'
+        while self.accept(ScriptLexerToken::symbol("}")).is_none() {
+            // <expr> : <expr>
+            
+            // Parse the key component
+            let key_component = match self.parse_expression() {
+                Err(failure)    => return Err(failure),
+                Ok(component)   => component
+            };
+
+            // ':'
+            if self.accept(ScriptLexerToken::symbol(":")).is_none() {
+                return Err(ParseError::new(self, "Expecting ':'"));
+            }
+
+            // Parse the value component
+            let value_component = match self.parse_expression() {
+                Err(failure)    => return Err(failure),
+                Ok(component)   => component
+            };
+
+            // Add to the components
+            components.push((key_component, value_component));
+
+            // Components separated by commas. Newlines are ignored
+            self.skip_newlines();
+
+            // Followed by a comma or the closing '}'
+            if self.accept(ScriptLexerToken::symbol(",")).is_none()
+                && !self.lookahead_is(ScriptLexerToken::symbol("}")) {
+                // Expected ','
+                return Err(ParseError::new(self, "Expected ',' or ']'"));
+            }
+
+            // Newlines allowed after the ','
+            self.skip_newlines();
+        }
+
+        Ok(Expression::Map(components))
     }
 
     ///
@@ -594,6 +649,48 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_empty_map_parameter() {
+        let statement   = "some-command { }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_single_map_parameter() {
+        let statement   = "some-command { \"foo\": \"bar\" }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_multi_map_parameter() {
+        let statement   = "some-command { foo: bar, baz: blarg }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
     }
 
     #[test]
