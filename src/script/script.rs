@@ -83,7 +83,7 @@ impl ScriptToken {
             "in"            => ScriptLexerToken::In,
             "def"           => ScriptLexerToken::Def,
 
-            "." | "," | "+" | "-" | "*" | "/" | "|" | "&" | "=" | "==" | "!=" | ">" | "<" | "<=" | ">=" | "!" | "?" | "||" | "&&" | "(" | ")" | "{" | "}" | "[" | "]"
+            "." | "," | ":" | "+" | "-" | "*" | "/" | "|" | "&" | "=" | "==" | "!=" | ">" | "<" | "<=" | ">=" | "!" | "?" | "||" | "&&" | "(" | ")" | "{" | "}" | "[" | "]"
                             => ScriptLexerToken::Symbol(lexer_match.token.clone()),
             
             "String"        => ScriptLexerToken::String,
