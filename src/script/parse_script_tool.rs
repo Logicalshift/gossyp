@@ -1,5 +1,6 @@
 use std::result::Result;
 
+use super::super::lex::lex_tool::*;
 use super::script::*;
 
 ///
@@ -63,7 +64,7 @@ impl<'a> ParseState<'a> {
     /// its content.
     ///
     fn lookahead_is(&self, token: ScriptLexerToken) -> bool {
-        if let Some((lookahead, remaining)) = self.lookahead() {
+        if let Some((lookahead, _remaining)) = self.lookahead() {
             if lookahead.token == token {
                 // Token matches
                 true
@@ -257,5 +258,37 @@ impl ParseScriptTool {
     ///
     pub fn new() -> ParseScriptTool {
         ParseScriptTool { }
+    }
+
+    ///
+    /// Tries to parse a script from the output of the lexer
+    ///
+    pub fn parse(input: &[LexerMatch]) -> Result<Vec<Script>, ParseError> {
+        // Convert to script tokens
+        let as_script_token: Vec<ScriptToken> = input
+            .iter()
+            .map(|token| ScriptToken::from_lexer_match(token))
+            .collect();
+
+        // Parse until we reach the end of the file
+        let mut parser = ParseState { remaining: &as_script_token };
+        let mut result = vec![];
+
+        while !parser.lookahead_is(ScriptLexerToken::EndOfFile) {
+            let next_statement = parser.parse_statement();
+
+            match next_statement {
+                // Fail out if we get a parse failure
+                Err(failure)        => return Err(failure),
+
+                // Build out the result otherwise
+                Ok(next_statement)  => result.push(next_statement)
+            }
+
+            // Swallow any trailing newlines
+            while parser.accept(ScriptLexerToken::Newline).is_some() { }
+        }
+
+        Ok(result)
     }
 }
