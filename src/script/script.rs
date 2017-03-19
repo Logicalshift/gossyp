@@ -4,7 +4,7 @@ use super::super::lex::*;
 ///
 /// Tokens that can exist in a script
 ///
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub enum ScriptLexerToken {
     Unknown,
     EndOfFile,
@@ -35,7 +35,7 @@ pub enum ScriptLexerToken {
 ///
 /// Token matched from the script
 ///
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 pub struct ScriptToken {
     pub token:      ScriptLexerToken,
     pub start:      i32,
@@ -94,7 +94,7 @@ impl ScriptToken {
 ///
 /// Representation of a parsed script
 ///
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Script {
     /// Run a command, with parameters
     RunCommand(Expression, Option<Expression>),
@@ -127,7 +127,7 @@ pub enum Script {
 ///
 /// Representation of an expression from the script
 ///
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Expression {
 
     // -- Constant values and data structures

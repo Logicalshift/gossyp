@@ -9,7 +9,7 @@ use super::script::*;
 ///
 /// Represents a parse error
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ParseError {
 
 }
@@ -296,5 +296,70 @@ impl ParseScriptTool {
         }
 
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use super::super::lex_script_tool::*;
+
+    ///
+    /// Performs lexing
+    ///
+    fn lex(text: &str) -> Vec<LexerMatch> {
+        let lexer = create_lex_script_tool();
+
+        lexer.lex(text)
+    }
+
+    fn parse(text: &str) -> Result<Vec<Script>, ParseError> {
+        let lexed = lex(text);
+        ParseScriptTool::parse(&lexed)
+    }
+
+    #[test]
+    fn can_parse_command_statement() {
+        let statement   = "some-command";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), None) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_parameter() {
+        let statement   = "some-command 1";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Number(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn cannot_try_to_put_multiple_statements_on_one_line() {
+        let statement   = "some-command 1 some-other-command";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn can_parse_multiple_lines() {
+        let statement   = "some-command\nsome-other-command";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+        assert!(parsed.unwrap().len() == 2);
     }
 }
