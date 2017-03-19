@@ -201,7 +201,19 @@ impl<'a> ParseState<'a> {
     fn parse_expression(&mut self) -> Result<Expression, ParseError> {
         let left_expr = if self.lookahead_is(ScriptLexerToken::symbol("[")) {
             self.parse_array_expression(ScriptLexerToken::symbol("["), ScriptLexerToken::symbol("]"))
-                .map(|x| Expression::Array(x))
+                .map(|array_entries| Expression::Array(array_entries))
+
+        } else if self.lookahead_is(ScriptLexerToken::symbol("(")) {
+            self.parse_array_expression(ScriptLexerToken::symbol("("), ScriptLexerToken::symbol(")"))
+                .map(|tuple_entries| {
+                    if tuple_entries.len() == 1 {
+                        // (x) == x
+                        tuple_entries[0].clone()
+                    } else {
+                        // (x, y) == tuple
+                        Expression::Tuple(tuple_entries)
+                    }
+                })
 
         } else {
             // Simple expression
@@ -473,8 +485,64 @@ mod test {
     }
 
     #[test]
+    fn can_parse_command_statement_with_empty_tuple_parameter() {
+        let statement   = "some-command ()";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_single_tuple_parameter() {
+        let statement   = "some-command(1)";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Number(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_multi_tuple_parameter() {
+        let statement   = "some-command(1, 2, 3)";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_complex_tuple_parameter() {
+        let statement   = "some-command(some-command.access, indexed[2], 3)";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+    }
+
+    #[test]
     fn can_parse_command_statement_with_empty_array_parameter() {
-        let statement   = "some-command [ ]";
+        let statement   = "some-command([ ])";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
@@ -488,7 +556,7 @@ mod test {
 
     #[test]
     fn can_parse_command_statement_with_single_array_parameter() {
-        let statement   = "some-command [ 1 ]";
+        let statement   = "some-command([ 1 ])";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
@@ -502,7 +570,7 @@ mod test {
 
     #[test]
     fn can_parse_command_statement_with_multi_array_parameter() {
-        let statement   = "some-command [ 1, 2, 3 ]";
+        let statement   = "some-command([ 1, 2, 3 ])";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
@@ -516,7 +584,7 @@ mod test {
 
     #[test]
     fn can_parse_command_statement_with_complex_array_parameter() {
-        let statement   = "some-command [ some-command.access, indexed[2], 3 ]";
+        let statement   = "some-command([ some-command.access, indexed[2], 3 ])";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
