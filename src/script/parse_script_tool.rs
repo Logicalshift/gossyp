@@ -11,7 +11,7 @@ use super::script::*;
 ///
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ParseError {
-
+    pub message: String
 }
 
 ///
@@ -21,8 +21,11 @@ pub struct ParseScriptTool {
 }
 
 impl ParseError {
-    pub fn new() -> ParseError {
-        ParseError { }
+    fn new<'a>(state: &ParseState<'a>, message: &str) -> ParseError {
+        println!("{}", message);
+        println!("{:?}", state.remaining);
+
+        ParseError { message: String::from(message) }
     }
 }
 
@@ -154,7 +157,7 @@ impl<'a> ParseState<'a> {
 
         } else {
             // Unrecognised token
-            Err(ParseError::new())
+            Err(ParseError::new(self, "Token cannot begin a statement"))
         }
     }
 
@@ -183,7 +186,7 @@ impl<'a> ParseState<'a> {
                        || self.lookahead_is(ScriptLexerToken::EndOfFile) {
                         Ok(command)
                     } else {
-                        Err(ParseError::new())
+                        Err(ParseError::new(self, "Found extra tokens after the end of a command"))
                     }
 
                 })
@@ -229,7 +232,7 @@ impl<'a> ParseState<'a> {
                     Ok(Expression::Index(Box::new((left_expr, right_expr))))
                 } else {
                     // Missing ']'
-                    Err(ParseError::new())
+                    Err(ParseError::new(self, "Missing ']'"))
                 }
             })
 
@@ -253,7 +256,7 @@ impl<'a> ParseState<'a> {
         // Opening '['
         if self.accept(ScriptLexerToken::symbol("[")).is_none() {
             // Not an array
-            return Err(ParseError::new());
+            return Err(ParseError::new(self, "Not an array"));
         }
 
         let mut components = vec![];
@@ -276,7 +279,7 @@ impl<'a> ParseState<'a> {
             if self.accept(ScriptLexerToken::symbol(",")).is_none()
                 && !self.lookahead_is(ScriptLexerToken::symbol("]")) {
                 // Expected ','
-                return Err(ParseError::new());
+                return Err(ParseError::new(self, "Expected ',' or ']'"));
             }
 
             // Newlines allowed after the ','
@@ -312,7 +315,7 @@ impl<'a> ParseState<'a> {
 
         } else {
             // Syntax error
-            Err(ParseError::new())
+            Err(ParseError::new(self, "Syntax error (was expecting an expression)"))
 
         }
     }
