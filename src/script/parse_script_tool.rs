@@ -62,13 +62,33 @@ impl<'a> ParseState<'a> {
     /// If the next token matches the specified token, consumes it and returns
     /// its content.
     ///
+    fn lookahead_is(&self, token: ScriptLexerToken) -> bool {
+        if let Some((lookahead, remaining)) = self.lookahead() {
+            if lookahead.token == token {
+                // Token matches
+                true
+            } else {
+                // Token does not match
+                false
+            }
+        } else {
+            // End of file
+            false
+        }
+    }
+
+    ///
+    /// If the next token matches the specified token, consumes it and returns
+    /// its content.
+    ///
     fn accept(&mut self, token: ScriptLexerToken) -> Option<&'a ScriptToken> {
         if let Some((lookahead, remaining)) = self.lookahead() {
-            // Found a token
             if lookahead.token == token {
+                // Token matches: remove it from the input and return it
                 self.remaining = remaining;
                 Some(lookahead)
             } else {
+                // Next token does not match
                 None
             }
         } else {
@@ -77,33 +97,43 @@ impl<'a> ParseState<'a> {
         }
     }
 
-    /*
-
     ///
     /// Parses a statement
     ///
-    pub fn parse_statement<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
-        if let Some((lookahead, remainder)) = lookahead(input) {
-            match lookahead.token {
-                // Newlines are ignored
-                ScriptLexerToken::Newline       => parse_statement(remainder),
-
-                ScriptLexerToken::Let           => parse_let(remainder),
-                ScriptLexerToken::Var           => parse_var(remainder),
-                ScriptLexerToken::Def           => parse_def(remainder),
-                ScriptLexerToken::If            => parse_if(remainder),
-                ScriptLexerToken::Using         => parse_using(remainder),
-                ScriptLexerToken::While         => parse_while(remainder),
-                ScriptLexerToken::Loop          => parse_loop(remainder),
-                ScriptLexerToken::For           => parse_for(remainder),
-
-                ScriptLexerToken::Identifier    => parse_command(input),
-
-                // Unrecognised token
-                _ => Err(ParseError::new())
-            }
+    pub fn parse_statement(&mut self) -> Result<Script, ParseError> {
+        if self.accept(ScriptLexerToken::Newline).is_some() {
+            // Newlines are ignored
+            self.parse_statement()
+        } else if self.accept(ScriptLexerToken::Let).is_some() {
+            // self.parse_let()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::Var).is_some() {
+            // self.parse_var()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::Def).is_some() {
+            // self.parse_def()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::If).is_some() {
+            // self.parse_if()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::Using).is_some() {
+            // self.parse_using()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::While).is_some() {
+            // self.parse_while()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::Loop).is_some() {
+            // self.parse_loop()
+            unimplemented!()
+        } else if self.accept(ScriptLexerToken::For).is_some() {
+            // self.parse_for()
+            unimplemented!()
+        } else if self.lookahead_is(ScriptLexerToken::Identifier) {
+            // While commands are either <Expression> or <Expression> <Expression>, we
+            // force the first expression to be an identifier at the moment
+            self.parse_command()
         } else {
-            // EOF
+            // Unrecognised token
             Err(ParseError::new())
         }
     }
@@ -113,14 +143,41 @@ impl<'a> ParseState<'a> {
     ///
     /// Syntax '<expression>', '<expression> <expression>'
     ///
-    pub fn parse_command<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
-        unimplemented!();
+    pub fn parse_command(&mut self) -> Result<Script, ParseError> {
+        // Starts with an expression specifying the command to run
+        self.parse_expression().and_then(move |command_expression| {
+            // Followed by arguments (or an end-of-expression marker)
+            if self.accept(ScriptLexerToken::Newline).is_some()
+               || self.accept(ScriptLexerToken::EndOfFile).is_some() {
+                // Newline or EOF ends a command
+                Ok(Script::RunCommand(command_expression, None))
+
+            } else {
+                // Anything else should be an argument expression
+                self.parse_expression().and_then(move |argument_expression| {
+                    Ok(Script::RunCommand(command_expression, Some(argument_expression)))
+
+                }).and_then(move |command| {
+                    // Command must be followed by a newline
+                    if self.accept(ScriptLexerToken::Newline).is_some()
+                       || self.accept(ScriptLexerToken::EndOfFile).is_some() {
+                        Ok(command)
+                    } else {
+                        Err(ParseError::new())
+                    }
+                    
+                })
+
+            }
+        })
     }
 
     ///
     /// Parses an Expression
     ///
-    pub fn parse_expression<'a>(input: &'a [ScriptToken]) -> Result<(Expression, &'a [ScriptToken]), ParseError> {
+    pub fn parse_expression(&mut self) -> Result<Expression, ParseError> {
+        unimplemented!()
+        /*
         if let Some((lookahead1, remainder1)) = lookahead(input) {
             let expr1 = match lookahead1.token {
                 ScriptLexerToken::Identifier    => Ok((Expression::Identifier(lookahead1.clone()), remainder)),
@@ -136,8 +193,10 @@ impl<'a> ParseState<'a> {
             // EOF
             Err(ParseError::new())
         }
+        */
     }
 
+    /*
     pub fn parse_let<'a>(input: &'a [ScriptToken]) -> Result<(Script, &'a [ScriptToken]), ParseError> {
         unimplemented!()
     }

@@ -7,6 +7,7 @@ use super::super::lex::*;
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub enum ScriptLexerToken {
     Unknown,
+    EndOfFile,
 
     Identifier, 
     String,
@@ -96,7 +97,7 @@ impl ScriptToken {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum Script {
     /// Run a command, with parameters
-    RunCommand(Expression),
+    RunCommand(Expression, Option<Expression>),
 
     /// Runs a sequence of comments
     Sequence(Vec<Script>),
