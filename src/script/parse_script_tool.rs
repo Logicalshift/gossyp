@@ -540,6 +540,34 @@ mod test {
     }
 
     #[test]
+    fn can_parse_command_statement_with_string_parameter() {
+        let statement   = "some-command \"Foo\"";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::String(_))) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_command_statement_with_string_parameter_2() {
+        let statement   = "some-command \"Foo\".\"bar\"";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::FieldAccess(_))) => true, _ => false});
+    }
+
+    #[test]
     fn can_parse_command_statement_with_empty_tuple_parameter() {
         let statement   = "some-command ()";
         let parsed      = parse(statement);
