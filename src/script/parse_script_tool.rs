@@ -490,6 +490,13 @@ mod test {
         ParseScriptTool::parse(&lexed)
     }
 
+    fn applies_to(script: &Script) -> Option<(Expression, Expression)> {
+        match script {
+            &Script::RunCommand(Expression::Apply(ref boxed_args)) => Some((**boxed_args).clone()),
+            _ => None
+        }
+    }
+
     #[test]
     fn can_parse_command_statement() {
         let statement   = "some-command";
@@ -565,7 +572,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Number(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Number(_))) => true, _ => false });
     }
 
     #[test]
@@ -579,7 +586,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::String(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::String(_))) => true, _ => false });
     }
 
     #[test]
@@ -593,7 +600,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::FieldAccess(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::FieldAccess(_))) => true, _ => false });
     }
 
     #[test]
@@ -607,7 +614,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Tuple(_))) => true, _ => false });
     }
 
     #[test]
@@ -621,7 +628,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Number(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Number(_))) => true, _ => false });
     }
 
     #[test]
@@ -635,7 +642,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Tuple(_))) => true, _ => false });
     }
 
     #[test]
@@ -649,7 +656,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Tuple(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Tuple(_))) => true, _ => false });
     }
 
     #[test]
@@ -663,7 +670,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Array(_))) => true, _ => false });
     }
 
     #[test]
@@ -677,7 +684,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Array(_))) => true, _ => false });
     }
 
     #[test]
@@ -691,7 +698,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Array(_))) => true, _ => false });
     }
 
     #[test]
@@ -705,7 +712,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Array(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Array(_))) => true, _ => false });
     }
 
     #[test]
@@ -719,7 +726,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Map(_))) => true, _ => false });
     }
 
     #[test]
@@ -733,7 +740,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Map(_))) => true, _ => false });
     }
 
     #[test]
@@ -747,7 +754,7 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        //assert!(match cmd { &Script::RunCommand(Expression::Identifier(_), Some(Expression::Map(_))) => true, _ => false});
+        assert!(match applies_to(cmd) { Some((Expression::Identifier(_), Expression::Map(_))) => true, _ => false });
     }
 
     #[test]
