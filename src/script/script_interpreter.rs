@@ -26,6 +26,13 @@ impl InterpretedScriptTool {
     }
 
     ///
+    /// Evaluates a single expression
+    ///
+    pub fn evaluate_expression(expression: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        unimplemented!()
+    }
+
+    ///
     /// Evaluates the result of executing a single statement
     ///
     pub fn evaluate_statement(statement: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {

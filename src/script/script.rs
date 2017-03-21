@@ -107,7 +107,7 @@ impl ScriptToken {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Script {
     /// Run a command, with parameters
-    RunCommand(Expression, Option<Expression>),
+    RunCommand(Expression),
 
     /// Runs a sequence of comments
     Sequence(Vec<Script>),
@@ -170,4 +170,16 @@ pub enum Expression {
 
     /// a (parameters)
     Apply(Box<(Expression, Expression)>)
+}
+
+impl Expression {
+    ///
+    /// True if this is an Apply expression
+    ///
+    pub fn is_apply(&self) -> bool {
+        match self {
+            &Expression::Apply(_)   => true,
+            _                       => false
+        }
+    }
 }
