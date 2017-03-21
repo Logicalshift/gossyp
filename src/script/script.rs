@@ -174,6 +174,13 @@ pub enum Expression {
 
 impl Expression {
     ///
+    /// Creates a new string expression
+    ///
+    pub fn string(s: &str) -> Expression {
+        Expression::String(ScriptToken { token: ScriptLexerToken::String, start: 0, end: s.len() as i32, matched: String::from(s) })
+    }
+
+    ///
     /// True if this is an Apply expression
     ///
     pub fn is_apply(&self) -> bool {
