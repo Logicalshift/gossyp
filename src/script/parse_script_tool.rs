@@ -252,6 +252,12 @@ impl<'a> ParseState<'a> {
                 }
             })
 
+        } else if self.lookahead_is(ScriptLexerToken::symbol("(")) {
+            // a(b) = 'call command a with parameters b'
+            self.parse_expression().map(|parameters| {
+                Expression::Apply(Box::new((left_expr, parameters)))
+            })
+
         } else {
             Ok(left_expr)
 
@@ -499,6 +505,14 @@ mod test {
     }
 
     #[test]
+    fn extra_data_is_an_error() {
+        let statement   = "some-command some-arg some-error";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_err());
+    }
+
+    #[test]
     fn can_parse_field_access() {
         let statement   = "some-command.some-field";
         let parsed      = parse(statement);
@@ -524,6 +538,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Index(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_apply_to_parameter() {
+        let statement   = "some-command some-other-command(1,2)";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(_) => true, _ => false});
     }
 
     #[test]
