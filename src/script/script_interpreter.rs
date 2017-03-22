@@ -57,13 +57,25 @@ impl InterpretedScriptTool {
     }
 
     ///
-    /// Attempts to evaluate an expression as a command
+    /// Attempts to evaluate an expression to a tool
     ///
-    pub fn evaluate_command_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Box<Tool>, Value> {
+    pub fn evaluate_expression_to_tool(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Box<Tool>, Value> {
         match expression {
             &Expression::Identifier(ref name)   => environment.parent_environment.get_json_tool(&name.matched).map_err(|_| Value::Null),
             _                                   => Err(Value::Null)
         }
+    }
+
+    ///
+    /// Calls an expression representing a tool and calls it with the specified parameters
+    ///
+    pub fn call_tool(tool_name: &Expression, parameters: Value, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        InterpretedScriptTool::evaluate_expression_to_tool(tool_name, environment).and_then(|tool| {
+            // TODO: create environment for the tool to run in
+
+            // Invoke the tool and generate the final result
+            tool.invoke_json(parameters, environment.parent_environment)
+        })
     }
 
     ///
@@ -72,6 +84,8 @@ impl InterpretedScriptTool {
     pub fn evaluate_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
         match expression {
             &Expression::String(ref s)          => Ok(Value::String(unquote_string(&s.matched))),
+
+            &Expression::Identifier(_)          => InterpretedScriptTool::call_tool(expression, Value::Null, environment),
 
             _                                   => Err(Value::Null)
         }
@@ -141,5 +155,20 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Foo"))));
+    }
+
+    #[test]
+    fn can_evaluate_tool_call() {
+        let tool_expr           = Expression::identifier("test");
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
+
+        println!("{:?}", make_pure_tool(|_: ()| "Success").invoke_json(Value::Null, &tool_environment));
+        println!("{:?}", result);
+        assert!(result == Ok(Value::String(String::from("Success"))));
     }
 }
