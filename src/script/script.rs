@@ -184,7 +184,7 @@ impl Expression {
     /// Creates a new identifier expression
     ///
     pub fn identifier(id: &str) -> Expression {
-        Expression::String(ScriptToken { token: ScriptLexerToken::Identifier, start: 0, end: id.len() as i32, matched: String::from(id) })
+        Expression::Identifier(ScriptToken { token: ScriptLexerToken::Identifier, start: 0, end: id.len() as i32, matched: String::from(id) })
     }
 
     ///

@@ -183,6 +183,19 @@ mod test {
     }
 
     #[test]
+    fn can_call_tool() {
+        let tool_expr           = Expression::identifier("test");
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = InterpretedScriptTool::call_tool(&tool_expr, Value::Null, &mut env);
+
+        assert!(result == Ok(Value::String(String::from("Success"))));
+    }
+
+    #[test]
     fn can_evaluate_tool_call() {
         let tool_expr           = Expression::identifier("test");
         let tool_environment    = DynamicEnvironment::new();
@@ -192,9 +205,6 @@ mod test {
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
         let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
 
-        println!("{:?}", tool_environment.get_json_tool("test").unwrap().invoke_json(Value::Null, &tool_environment));
-        println!("{:?}", InterpretedScriptTool::call_tool(&tool_expr, Value::Null, &mut env));
-        println!("{:?}", result);
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
 }
