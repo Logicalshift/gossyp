@@ -181,6 +181,13 @@ impl Expression {
     }
 
     ///
+    /// Creates a new identifier expression
+    ///
+    pub fn identifier(id: &str) -> Expression {
+        Expression::String(ScriptToken { token: ScriptLexerToken::Identifier, start: 0, end: id.len() as i32, matched: String::from(id) })
+    }
+
+    ///
     /// True if this is an Apply expression
     ///
     pub fn is_apply(&self) -> bool {
