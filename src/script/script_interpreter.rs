@@ -48,6 +48,31 @@ fn unquote_string(string: &str) -> String {
     result
 }
 
+///
+/// Script evaluation error
+///
+#[derive(Serialize, Deserialize)]
+pub enum ScriptEvaluationError {
+    /// Tried to evaluate an expression type that's not implemented yet
+    ExpressionNotImplemented,
+
+    /// Tried to look up a tool and it couldn't be found
+    ToolNameNotFound,
+
+    /// Found an expression that can't be treated as a tool where a tool name was expected
+    ExpressionDoesNotEvaluateToTool
+}
+
+///
+/// Creates an execution error
+///
+fn generate_expression_error(error: ScriptEvaluationError, expr: &Expression) -> Value {
+    json![{
+        "error":                error,
+        "failed-expression":    expr
+    }]
+}
+
 impl InterpretedScriptTool {
     ///
     /// Creates a new interpreted script tool from a set of statements
@@ -61,8 +86,8 @@ impl InterpretedScriptTool {
     ///
     pub fn evaluate_expression_to_tool(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Box<Tool>, Value> {
         match expression {
-            &Expression::Identifier(ref name)   => environment.parent_environment.get_json_tool(&name.matched).map_err(|_| Value::Null),
-            _                                   => Err(Value::Null)
+            &Expression::Identifier(ref name)   => environment.parent_environment.get_json_tool(&name.matched).map_err(|_| generate_expression_error(ScriptEvaluationError::ToolNameNotFound, expression)),
+            _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionDoesNotEvaluateToTool, expression))
         }
     }
 
@@ -87,7 +112,7 @@ impl InterpretedScriptTool {
 
             &Expression::Identifier(_)          => InterpretedScriptTool::call_tool(expression, Value::Null, environment),
 
-            _                                   => Err(Value::Null)
+            _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
         }
     }
 
@@ -167,7 +192,8 @@ mod test {
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
         let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
 
-        println!("{:?}", make_pure_tool(|_: ()| "Success").invoke_json(Value::Null, &tool_environment));
+        println!("{:?}", tool_environment.get_json_tool("test").unwrap().invoke_json(Value::Null, &tool_environment));
+        println!("{:?}", InterpretedScriptTool::call_tool(&tool_expr, Value::Null, &mut env));
         println!("{:?}", result);
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
