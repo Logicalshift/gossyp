@@ -56,6 +56,9 @@ pub enum ScriptEvaluationError {
     /// Tried to evaluate an expression type that's not implemented yet
     ExpressionNotImplemented,
 
+    /// Tried to evaluate a statement type that's not implemented yet
+    StatementNotImplemented,
+
     /// Tried to look up a tool and it couldn't be found
     ToolNameNotFound,
 
@@ -65,6 +68,16 @@ pub enum ScriptEvaluationError {
 
 ///
 /// Creates an execution error
+///
+fn generate_script_error(error: ScriptEvaluationError, script: &Script) -> Value {
+    json![{
+        "error":                error,
+        "failed-statement":     script
+    }]
+}
+
+///
+/// Creates an execution error relating to an expression
 ///
 fn generate_expression_error(error: ScriptEvaluationError, expr: &Expression) -> Value {
     json![{
@@ -130,12 +143,16 @@ impl InterpretedScriptTool {
     /// Evaluates the result of executing a single statement
     ///
     pub fn evaluate_statement(statement: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-        unimplemented!()
+        match statement {
+            &Script::RunCommand(ref expr)   => InterpretedScriptTool::evaluate_expression(expr, environment),
+
+            _                               => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
+        }
     }
 }
 
 impl Tool for InterpretedScriptTool {
-    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
+    fn invoke_json(&self, _input: Value, environment: &Environment) -> Result<Value, Value> {
         // Make the environment that this script will run in
         let mut script_environment = ScriptExecutionEnvironment::new(environment);
 
@@ -214,6 +231,19 @@ mod test {
 
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
         let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
+
+        assert!(result == Ok(Value::String(String::from("Success"))));
+    }
+
+    #[test]
+    fn can_execute_run_command() {
+        let tool_expr           = Script::RunCommand(Expression::identifier("test"));
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = InterpretedScriptTool::evaluate_statement(&tool_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
