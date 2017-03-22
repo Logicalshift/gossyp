@@ -104,6 +104,15 @@ impl InterpretedScriptTool {
     }
 
     ///
+    /// Evaluates an 'apply' expression
+    ///
+    pub fn apply(&(ref tool, ref parameters): &(Expression, Expression), environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        InterpretedScriptTool::evaluate_expression(&parameters, environment).and_then(|parameters| {
+            InterpretedScriptTool::call_tool(&tool, parameters, environment)
+        })
+    }
+
+    ///
     /// Evaluates a single expression
     ///
     pub fn evaluate_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
@@ -111,6 +120,7 @@ impl InterpretedScriptTool {
             &Expression::String(ref s)          => Ok(Value::String(unquote_string(&s.matched))),
 
             &Expression::Identifier(_)          => InterpretedScriptTool::call_tool(expression, Value::Null, environment),
+            &Expression::Apply(ref expr)        => InterpretedScriptTool::apply(&*expr, environment),
 
             _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
         }
@@ -201,6 +211,19 @@ mod test {
         let tool_environment    = DynamicEnvironment::new();
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
+
+        assert!(result == Ok(Value::String(String::from("Success"))));
+    }
+
+    #[test]
+    fn can_evaluate_apply_expression() {
+        let tool_expr           = Expression::Apply(Box::new((Expression::identifier("test"), Expression::string("\"Success\""))));
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|s: String| s)));
 
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
         let result              = InterpretedScriptTool::evaluate_expression(&tool_expr, &mut env);
