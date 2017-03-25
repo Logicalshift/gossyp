@@ -76,7 +76,10 @@ pub enum ScriptEvaluationError {
     ToolNameNotFound,
 
     /// Found an expression that can't be treated as a tool where a tool name was expected
-    ExpressionDoesNotEvaluateToTool
+    ExpressionDoesNotEvaluateToTool,
+
+    /// Expressions used as keys in a map must evaluate to a string
+    MapKeysMustEvaluateToAString,
 }
 
 ///
@@ -153,6 +156,30 @@ impl InterpretedScriptTool {
 
         Ok(Value::Array(result))
     }
+    
+    ///
+    /// Evaluates a series of expressions into an array
+    ///
+    pub fn evaluate_map(exprs: &Vec<(Expression, Expression)>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        let mut result = Map::new();
+
+        for &(ref key_expr, ref value_expr) in exprs.iter() {
+            let key = match InterpretedScriptTool::evaluate_expression(key_expr, environment) {
+                Ok(Value::String(key))  => key,
+                Ok(_)                   => return Err(generate_expression_error(ScriptEvaluationError::MapKeysMustEvaluateToAString, key_expr)),
+                Err(erm)                => return Err(erm)
+            };
+
+            let value = match InterpretedScriptTool::evaluate_expression(value_expr, environment) {
+                Ok(value)   => value,
+                Err(erm)    => return Err(erm)
+            };
+
+            result.insert(key, value);
+        }
+
+        Ok(Value::Object(result))
+    }
 
     ///
     /// Evaluates a single expression
@@ -167,6 +194,7 @@ impl InterpretedScriptTool {
 
             &Expression::Array(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
             &Expression::Tuple(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
+            &Expression::Map(ref exprs)         => InterpretedScriptTool::evaluate_map(exprs, environment),
 
             _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
         }
@@ -300,6 +328,26 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&tuple_expr, &mut env);
 
         assert!(result == Ok(json![ [ 1,2,3 ] ]));
+    }
+
+    #[test]
+    fn can_evaluate_map() {
+        let map_expr            = Expression::Map(vec![ (Expression::string("\"Foo\""), Expression::number("1")), (Expression::string("\"Bar\""), Expression::number("2")) ]);
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&map_expr, &mut env);
+
+        assert!(result == Ok(json![ { "Foo": 1, "Bar": 2 } ]));
+    }
+
+    #[test]
+    fn can_evaluate_map_with_duplicate_keys() {
+        let map_expr            = Expression::Map(vec![ (Expression::string("\"Foo\""), Expression::number("1")), (Expression::string("\"Foo\""), Expression::number("2")) ]);
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&map_expr, &mut env);
+
+        assert!(result == Ok(json![ { "Foo": 2 } ]));
     }
 
     #[test]
