@@ -7,6 +7,7 @@ use std::result::Result;
 use serde_json::*;
 
 use silkthread_base::*;
+use silkthread_base::basic::*;
 
 use super::script::*;
 
@@ -103,6 +104,17 @@ fn generate_expression_error(error: ScriptEvaluationError, expr: &Expression) ->
 }
 
 impl InterpretedScriptTool {
+    ///
+    /// Creates a tool that can evaluate a script
+    ///
+    pub fn new_script_eval_tool() -> Box<Tool> {
+        Box::new(make_dynamic_tool(|script: Vec<Script>, environment: &Environment| {
+            let script_tool = InterpretedScriptTool::from_statements(script);
+
+            script_tool.invoke_json(Value::Null, environment)
+        }))
+    }
+
     ///
     /// Creates a new interpreted script tool from a set of statements
     ///
