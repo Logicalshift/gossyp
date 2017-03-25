@@ -188,6 +188,13 @@ impl Expression {
     }
 
     ///
+    /// Creates a new number expression
+    ///
+    pub fn number(num: &str) -> Expression {
+        Expression::Number(ScriptToken { token: ScriptLexerToken::Number, start: 0, end: num.len() as i32, matched: String::from(num) })
+    }
+
+    ///
     /// True if this is an Apply expression
     ///
     pub fn is_apply(&self) -> bool {

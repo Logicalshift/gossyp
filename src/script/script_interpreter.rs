@@ -49,6 +49,19 @@ fn unquote_string(string: &str) -> String {
 }
 
 ///
+/// Parses a number string
+///
+fn parse_number(number: &str) -> Value {
+    if number.contains('.') || number.contains('e') || number.contains('E') {
+        json![ number.parse::<f64>().unwrap() ]
+    } else if number.starts_with("0x") {
+        json![ i64::from_str_radix(&number[2..], 16).unwrap() ]
+    } else {
+        json![ number.parse::<i64>().unwrap() ]
+    }
+}
+
+///
 /// Script evaluation error
 ///
 #[derive(Serialize, Deserialize)]
@@ -130,6 +143,7 @@ impl InterpretedScriptTool {
     ///
     pub fn evaluate_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
         match expression {
+            &Expression::Number(ref n)          => Ok(parse_number(&n.matched)),
             &Expression::String(ref s)          => Ok(Value::String(unquote_string(&s.matched))),
 
             &Expression::Identifier(_)          => InterpretedScriptTool::call_tool(expression, Value::Null, environment),
@@ -207,6 +221,46 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Foo"))));
+    }
+
+    #[test]
+    fn can_evaluate_number() {
+        let num_expr            = Expression::number("42");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&num_expr, &mut env);
+
+        assert!(result == Ok(json![ 42 ]));
+    }
+
+    #[test]
+    fn can_evaluate_float_number_1() {
+        let num_expr            = Expression::number("42.2");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&num_expr, &mut env);
+
+        assert!(result == Ok(json![ 42.2 ]));
+    }
+
+    #[test]
+    fn can_evaluate_float_number_2() {
+        let num_expr            = Expression::number("42e1");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&num_expr, &mut env);
+
+        assert!(result == Ok(json![ 42e1 ]));
+    }
+
+    #[test]
+    fn can_evaluate_hex_number() {
+        let num_expr            = Expression::number("0xabcd");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&num_expr, &mut env);
+
+        assert!(result == Ok(json![ 0xabcd ]));
     }
 
     #[test]
