@@ -137,6 +137,22 @@ impl InterpretedScriptTool {
             InterpretedScriptTool::call_tool(&tool, parameters, environment)
         })
     }
+    
+    ///
+    /// Evaluates a series of expressions into an array
+    ///
+    pub fn evaluate_array(exprs: &Vec<Expression>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        let mut result = vec![];
+
+        for expr in exprs.iter() {
+            match InterpretedScriptTool::evaluate_expression(expr, environment) {
+                Ok(next) => result.push(next),
+                Err(erm) => return Err(erm)
+            }
+        }
+
+        Ok(Value::Array(result))
+    }
 
     ///
     /// Evaluates a single expression
@@ -148,6 +164,9 @@ impl InterpretedScriptTool {
 
             &Expression::Identifier(_)          => InterpretedScriptTool::call_tool(expression, Value::Null, environment),
             &Expression::Apply(ref expr)        => InterpretedScriptTool::apply(&*expr, environment),
+
+            &Expression::Array(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
+            &Expression::Tuple(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
 
             _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
         }
@@ -261,6 +280,26 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&num_expr, &mut env);
 
         assert!(result == Ok(json![ 0xabcd ]));
+    }
+
+    #[test]
+    fn can_evaluate_array() {
+        let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&array_expr, &mut env);
+
+        assert!(result == Ok(json![ [ 1,2,3 ] ]));
+    }
+
+    #[test]
+    fn can_evaluate_tuple() {
+        let tuple_expr          = Expression::Tuple(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&tuple_expr, &mut env);
+
+        assert!(result == Ok(json![ [ 1,2,3 ] ]));
     }
 
     #[test]
