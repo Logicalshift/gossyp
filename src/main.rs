@@ -29,6 +29,7 @@ fn main() {
         let read_line       = main_env.get_typed_tool::<(), ReadLineResult>(READ_LINE).unwrap();
         let lex_line        = main_env.get_typed_tool::<String, Value>(LEX_SCRIPT).unwrap();
         let parse_script    = main_env.get_json_tool(PARSE_SCRIPT).unwrap();
+        let eval_script     = main_env.get_json_tool(EVAL_SCRIPT).unwrap();
         let display_prompt  = main_env.get_typed_tool::<(), ()>("display-prompt");
 
         // Display a prompt
@@ -44,9 +45,10 @@ fn main() {
             Ok(result) => {
                 // Process the line
                 // TODO!
-                let lexed = lex_line.invoke(result.line, &main_env).unwrap();
-                let parsed = parse_script.invoke_json(lexed, &main_env).unwrap();
-                print_value.invoke(parsed, &main_env).unwrap();
+                let lexed       = lex_line.invoke(result.line, &main_env).unwrap();
+                let parsed      = parse_script.invoke_json(lexed, &main_env).unwrap();
+                let eval_result = eval_script.invoke_json(parsed, &main_env);
+                print_value.invoke(eval_result.unwrap(), &main_env).unwrap();
                 print_string.invoke(String::from("\n"), &main_env).unwrap();
 
                 // Stop on EOF
