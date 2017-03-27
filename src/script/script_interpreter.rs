@@ -32,6 +32,7 @@ fn unquote_string(string: &str) -> String {
         match chr {
             '\\' => { 
                 let quoted = chars[index+1];
+                index += 1;
                 match quoted {
                     'n' => result.push('\n'),
                     'r' => result.push('\r'),
@@ -280,6 +281,26 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Foo"))));
+    }
+
+    #[test]
+    fn can_evaluate_string_with_newline() {
+        let string_expr         = Expression::string("\"Foo\\n\"");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&string_expr, &mut env);
+
+        assert!(result == Ok(Value::String(String::from("Foo\n"))));
+    }
+
+    #[test]
+    fn can_evaluate_string_with_quote() {
+        let string_expr         = Expression::string("\"\\\"\"");
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&string_expr, &mut env);
+
+        assert!(result == Ok(Value::String(String::from("\""))));
     }
 
     #[test]
