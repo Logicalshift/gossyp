@@ -19,12 +19,12 @@
 //!
 //! ```
 //! # #[macro_use] extern crate serde_json;
-//! # #[macro_use] extern crate silkthread_base;
+//! # #[macro_use] extern crate gossyp_base;
 //! # #[macro_use] extern crate serde;
 //! # fn main() {
 //! # 
-//! use silkthread_base::*;
-//! use silkthread_base::basic::*;
+//! use gossyp_base::*;
+//! use gossyp_base::basic::*;
 //! use serde_json::*;
 //!
 //! let tool = make_pure_tool(|(x, y): (i32, i32)| x+y);
@@ -48,7 +48,7 @@
 //! The easiest environment to use is the dynamic environment, which allows for tools to be defined on the fly:
 //!
 //! ```
-//! use silkthread_base::basic::*;
+//! use gossyp_base::basic::*;
 //!
 //! let env = DynamicEnvironment::new();
 //! env.define("add", Box::new(make_pure_tool(|(x, y): (i32, i32)| x+y)));
@@ -57,7 +57,7 @@
 //! There are some convenience functions to make tools from environments easier to work with:
 //!
 //! ```
-//! # use silkthread_base::basic::*;
+//! # use gossyp_base::basic::*;
 //! # 
 //! # let env = DynamicEnvironment::new();
 //! # env.define("add", Box::new(make_pure_tool(|(x, y): (i32, i32)| x+y)));
