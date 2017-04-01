@@ -1,16 +1,16 @@
 extern crate serde_json;
-extern crate silkthread_base;
-extern crate silkthread_toolkit;
-extern crate silkthread_lang;
+extern crate gossyp_base;
+extern crate gossyp_toolkit;
+extern crate gossyp_lang;
 
 use serde_json::*;
 
-use silkthread_base::*;
-use silkthread_base::basic::*;
-use silkthread_toolkit::io::*;
-use silkthread_toolkit::io::tool::*;
-use silkthread_lang::script::*;
-use silkthread_lang::script::tool::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
+use gossyp_toolkit::io::*;
+use gossyp_toolkit::io::tool::*;
+use gossyp_lang::script::*;
+use gossyp_lang::script::tool::*;
 
 fn main() {
     // Start up
