@@ -2,6 +2,8 @@ pub mod lex_script_tool;
 pub mod parse_script_tool;
 pub mod script;
 pub mod script_interpreter;
+pub mod evaluate_statement;
+pub mod evaluate_expression;
 pub mod tool;
 
 use self::lex_script_tool::*;
