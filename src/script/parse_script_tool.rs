@@ -1,7 +1,7 @@
 use std::result::Result;
 
-use silkthread_base::*;
-use silkthread_base::basic::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
 
 use super::super::lex::lex_tool::*;
 use super::script::*;

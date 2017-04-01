@@ -10,9 +10,9 @@ use std::iter::*;
 use serde_json::*;
 
 use concordance::*;
-use silkthread_base::*;
-use silkthread_base::basic::*;
-use silkthread_base::basic::tool_name::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
+use gossyp_base::basic::tool_name::*;
 
 ///
 /// Input for the lexer tool

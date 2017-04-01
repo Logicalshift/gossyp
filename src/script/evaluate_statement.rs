@@ -29,7 +29,7 @@ pub fn evaluate_statement(statement: &Script, environment: &mut ScriptExecutionE
 
 #[cfg(test)]
 mod test {
-    use silkthread_base::basic::*;
+    use gossyp_base::basic::*;
     use super::*;
 
     #[test]

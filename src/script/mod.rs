@@ -9,8 +9,8 @@ pub mod tool;
 use self::lex_script_tool::*;
 use self::parse_script_tool::*;
 use self::script_interpreter::*;
-use silkthread_base::*;
-use silkthread_base::basic::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
 
 ///
 /// ToolSet for dealing with the scripting language

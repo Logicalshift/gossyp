@@ -6,8 +6,8 @@
 use std::result::Result;
 use serde_json::*;
 
-use silkthread_base::*;
-use silkthread_base::basic::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
 
 use super::script::*;
 use super::evaluate_statement::*;
