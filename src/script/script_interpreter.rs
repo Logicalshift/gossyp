@@ -403,8 +403,40 @@ mod test {
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
         let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
 
-        println!("{:?}", result);
         assert!(result == Ok(json![ 2 ]));
+    }
+
+    #[test]
+    fn positve_index_can_be_out_of_range() {
+        let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("100"))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn negative_index_is_out_of_range() {
+        let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("-1"))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn cannot_index_array_with_string() {
+        let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::string("\"1\""))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        assert!(result.is_err());
     }
 
     #[test]
