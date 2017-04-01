@@ -103,6 +103,11 @@ mod test {
     }
 
     #[test]
+    fn can_lex_negative_number() {
+        assert!(lex_tokens("-1") == vec![ String::from("Number") ]);
+    }
+
+    #[test]
     fn can_lex_simple_string() {
         assert!(lex_tokens("\"Foo\"") == vec![ String::from("String") ]);
     }
