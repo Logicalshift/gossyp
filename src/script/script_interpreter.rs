@@ -89,8 +89,14 @@ pub enum ScriptEvaluationError {
     /// When indexing an array or a string, the index must be a number
     ArrayIndexMustBeANumber,
 
+    /// When indexing a map, the index must be a string
+    MapIndexMustBeAString,
+
     /// When indexing an array, the index must be in the array bounds
-    IndexOutOfBounds
+    IndexOutOfBounds,
+
+    /// Object value is not present in a map
+    ObjectValueNotPresent
 }
 
 ///
@@ -217,12 +223,12 @@ impl InterpretedScriptTool {
                         match rhs_res {
                             Value::Number(index) => {
                                 index.as_u64()
-                                    .and_then(|index| array.get(index as usize))
-                                    .map(|indexed_value| indexed_value.clone())
-                                    .ok_or_else(|| generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                                    .and_then(|index|       array.get(index as usize))
+                                    .map(|indexed_value|    indexed_value.clone())
+                                    .ok_or_else(||          generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
                             },
 
-                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, lhs))
+                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
                         }
                     },
 
@@ -231,14 +237,27 @@ impl InterpretedScriptTool {
                         match rhs_res {
                             Value::Number(index) => {
                                 index.as_u64()
-                                    .and_then(|index| string.chars().nth(index as usize))
-                                    .map(|indexed_value| Value::String(indexed_value.to_string()))
-                                    .ok_or_else(|| generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                                    .and_then(|index|       string.chars().nth(index as usize))
+                                    .map(|indexed_value|    Value::String(indexed_value.to_string()))
+                                    .ok_or_else(||          generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
                             },
 
-                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, lhs))
+                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
                         }
-                    }
+                    },
+
+                    Value::Object(map) => {
+                        // Map[n] indexing: n must be a string
+                        match rhs_res {
+                            Value::String(index) => {
+                                map.get(&index)
+                                    .map(|ref_value|    ref_value.clone())
+                                    .ok_or_else(||      generate_expression_error(ScriptEvaluationError::ObjectValueNotPresent, rhs))
+                            },
+
+                            _ => Err(generate_expression_error(ScriptEvaluationError::MapIndexMustBeAString, rhs))
+                        }
+                    },
 
                     _ => Err(generate_expression_error(ScriptEvaluationError::IndexMustApplyToAnArrayOrAMap, lhs))
                 }
@@ -482,6 +501,17 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&map_expr, &mut env);
 
         assert!(result == Ok(json![ { "Foo": 1, "Bar": 2 } ]));
+    }
+
+    #[test]
+    fn can_index_map() {
+        let map_expr            = Expression::Map(vec![ (Expression::string("\"Foo\""), Expression::number("1")), (Expression::string("\"Bar\""), Expression::number("2")) ]);
+        let lookup_expr         = Expression::Index(Box::new((map_expr, Expression::string("\"Bar\""))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        assert!(result == Ok(json![ 2 ]));
     }
 
     #[test]
