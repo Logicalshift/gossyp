@@ -82,6 +82,15 @@ pub enum ScriptEvaluationError {
 
     /// Expressions used as keys in a map must evaluate to a string
     MapKeysMustEvaluateToAString,
+
+    /// In index expression like foo[bar], foo must be either an array, a string or a map
+    IndexMustApplyToAnArrayOrAMap,
+
+    /// When indexing an array or a string, the index must be a number
+    ArrayIndexMustBeANumber,
+
+    /// When indexing an array, the index must be in the array bounds
+    IndexOutOfBounds
 }
 
 ///
@@ -195,6 +204,34 @@ impl InterpretedScriptTool {
     }
 
     ///
+    /// Evaluates an index expression
+    ///
+    pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+        // Evaluate the left-hand and right-hand sides of the expression
+        InterpretedScriptTool::evaluate_expression(lhs, environment)
+            .and_then(|lhs_res| InterpretedScriptTool::evaluate_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
+            .and_then(|(lhs_res, rhs_res)| {
+                match lhs_res {
+                    Value::Array(ref array) => {
+                        // Array[n] indexing: n must be a number
+                        match rhs_res {
+                            Value::Number(index) => {
+                                index.as_u64()
+                                    .and_then(|index| array.get(index as usize))
+                                    .map(|indexed_value| indexed_value.clone())
+                                    .ok_or_else(|| generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                            },
+
+                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, lhs))
+                        }
+                    },
+
+                    _ => Err(generate_expression_error(ScriptEvaluationError::IndexMustApplyToAnArrayOrAMap, lhs))
+                }
+            })
+    }
+
+    ///
     /// Evaluates a single expression
     ///
     pub fn evaluate_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
@@ -208,6 +245,11 @@ impl InterpretedScriptTool {
             &Expression::Array(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
             &Expression::Tuple(ref exprs)       => InterpretedScriptTool::evaluate_array(exprs, environment),
             &Expression::Map(ref exprs)         => InterpretedScriptTool::evaluate_map(exprs, environment),
+
+            &Expression::Index(ref boxed_exprs) => {
+                let (ref lhs, ref rhs) = **boxed_exprs;
+                InterpretedScriptTool::evaluate_index(lhs, rhs, environment)
+            },
 
             _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
         }
@@ -351,6 +393,18 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&array_expr, &mut env);
 
         assert!(result == Ok(json![ [ 1,2,3 ] ]));
+    }
+
+    #[test]
+    fn can_lookup_array_index() {
+        let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
+        let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("1"))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        println!("{:?}", result);
+        assert!(result == Ok(json![ 2 ]));
     }
 
     #[test]
