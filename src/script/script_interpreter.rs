@@ -226,6 +226,20 @@ impl InterpretedScriptTool {
                         }
                     },
 
+                    Value::String(string) => {
+                        // String[n] indexing: n must be a number
+                        match rhs_res {
+                            Value::Number(index) => {
+                                index.as_u64()
+                                    .and_then(|index| string.chars().nth(index as usize))
+                                    .map(|indexed_value| Value::String(indexed_value.to_string()))
+                                    .ok_or_else(|| generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                            },
+
+                            _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, lhs))
+                        }
+                    }
+
                     _ => Err(generate_expression_error(ScriptEvaluationError::IndexMustApplyToAnArrayOrAMap, lhs))
                 }
             })
@@ -404,6 +418,17 @@ mod test {
         let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
 
         assert!(result == Ok(json![ 2 ]));
+    }
+
+    #[test]
+    fn can_lookup_string_index() {
+        let string_expr         = Expression::string("\"Abcd\"");
+        let lookup_expr         = Expression::Index(Box::new((string_expr, Expression::number("2"))));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
+        let result              = InterpretedScriptTool::evaluate_expression(&lookup_expr, &mut env);
+
+        assert!(result == Ok(json![ "c" ]));
     }
 
     #[test]
