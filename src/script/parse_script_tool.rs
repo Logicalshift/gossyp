@@ -396,11 +396,33 @@ impl<'a> ParseState<'a> {
     }
 
     fn parse_let(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        if let Some(identifier) = self.accept(ScriptLexerToken::Identifier) {
+            if self.accept(ScriptLexerToken::Symbol(String::from("="))).is_some() {
+                self.parse_expression()
+                    .map(|expr| {
+                        Script::Let(identifier.clone(), expr)
+                    })
+            } else {
+                Err(ParseError::new(self, "Was expecting '='"))
+            }
+        } else {
+            Err(ParseError::new(self, "Was expecting an identifier for the new variable"))
+        }
     }
 
     fn parse_var(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        if let Some(identifier) = self.accept(ScriptLexerToken::Identifier) {
+            if self.accept(ScriptLexerToken::Symbol(String::from("="))).is_some() {
+                self.parse_expression()
+                    .map(|expr| {
+                        Script::Var(identifier.clone(), expr)
+                    })
+            } else {
+                Err(ParseError::new(self, "Was expecting '='"))
+            }
+        } else {
+            Err(ParseError::new(self, "Was expecting an identifier for the new variable"))
+        }
     }
 
     fn parse_def(&mut self) -> Result<Script, ParseError> {
@@ -509,6 +531,34 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Identifier(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_let_statement() {
+        let statement   = "let foo = bar";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::Let(_, Expression::Identifier(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_var_statement() {
+        let statement   = "var foo = bar";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::Var(_, Expression::Identifier(_)) => true, _ => false});
     }
 
     #[test]

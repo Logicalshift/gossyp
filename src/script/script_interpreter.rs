@@ -80,6 +80,8 @@ impl Tool for InterpretedScriptTool {
         // Make the environment that this script will run in
         let mut script_environment = ScriptExecutionEnvironment::new(environment);
 
+        // TODO: bind the values contained within the script
+
         // Execute the script
         let mut result = vec![];
         for statement in self.statements.iter() {
