@@ -1,5 +1,5 @@
 [package]
-name    = "silkthread_toolkit"
+name    = "gossyp_toolkit"
 version = "0.1.0"
 license = "Apache"
 authors = ["Andrew Hunter <andrew@logicalshift.io>"]
@@ -8,4 +8,4 @@ authors = ["Andrew Hunter <andrew@logicalshift.io>"]
 serde           = "0.9"
 serde_json      = "0.9"
 serde_derive    = "0.9"
-silkthread_base = { path = '../silkthread_base', version = "0.1.0" }
+gossyp_base     = { path = '../gossyp_base', version = "0.1.0" }

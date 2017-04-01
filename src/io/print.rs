@@ -7,7 +7,7 @@ use std::error::Error;
 use std::io::*;
 use std::sync::*;
 use serde_json::*;
-use silkthread_base::*;
+use gossyp_base::*;
 
 ///
 /// Tool that prints out text for its parameter to a stream

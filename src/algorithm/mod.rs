@@ -5,8 +5,8 @@ pub mod tool;
 pub use self::compare::*;
 pub use self::sort::*;
 
-use silkthread_base::*;
-use silkthread_base::basic::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
 
 ///
 /// ToolSet containing the algorithm tools

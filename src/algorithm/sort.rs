@@ -5,7 +5,7 @@
 use std::cmp::*;
 use std::result::Result;
 use serde_json::*;
-use silkthread_base::*;
+use gossyp_base::*;
 
 use super::compare::*;
 
@@ -122,7 +122,7 @@ impl Tool for SortTool {
 #[cfg(test)]
 mod test{
     use super::*;
-    use silkthread_base::basic::*;
+    use gossyp_base::basic::*;
 
     #[test]
     fn can_sort_array() {

@@ -1,6 +1,6 @@
 use std::result::Result;
 use serde_json::*;
-use silkthread_base::*;
+use gossyp_base::*;
 
 ///
 /// The compare tool compares two JSON objects and returns -1, 0, or 1 depending on if the first is
@@ -218,7 +218,7 @@ impl Tool for CompareTool {
 #[cfg(test)]
 mod test {
     use super::*;
-    use silkthread_base::basic::*;
+    use gossyp_base::basic::*;
 
     #[test]
     fn can_compare_numbers_i64_lt() {

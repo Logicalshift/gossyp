@@ -9,8 +9,8 @@ pub use self::write_bytes::*;
 pub use self::read_line::*;
 
 use std::io::*;
-use silkthread_base::*;
-use silkthread_base::basic::*;
+use gossyp_base::*;
+use gossyp_base::basic::*;
 use self::shared_stream::*;
 
 ///

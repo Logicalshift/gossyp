@@ -7,7 +7,7 @@ use std::error::Error;
 use std::io::*;
 use std::sync::*;
 use serde_json::*;
-use silkthread_base::*;
+use gossyp_base::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct ReadLineResult {
