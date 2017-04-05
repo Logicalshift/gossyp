@@ -1,7 +1,9 @@
 pub mod lex_script_tool;
 pub mod parse_script_tool;
 pub mod script;
+pub mod bound_script;
 pub mod script_interpreter;
+pub mod bind_expression;
 pub mod evaluate_statement;
 pub mod evaluate_expression;
 pub mod tool;

@@ -18,6 +18,7 @@ fn generate_expression_error(error: ScriptEvaluationError, expr: &Expression) ->
 
 ///
 /// Creates an unquoted version of a string
+/// TODO: remove me (done when binding expression)
 ///
 fn unquote_string(string: &str) -> String {
     let chars: Vec<char>    = string.chars().collect();
@@ -50,6 +51,7 @@ fn unquote_string(string: &str) -> String {
 
 ///
 /// Parses a number string
+/// TODO: moving into bind_expression
 ///
 fn parse_number(number: &str) -> Value {
     if number.contains('.') || number.contains('e') || number.contains('E') {
