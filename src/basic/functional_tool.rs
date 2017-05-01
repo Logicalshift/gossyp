@@ -10,28 +10,32 @@ use super::super::environment::*;
 ///
 /// Represents a tool made from a function
 ///
-pub struct FnTool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize> {
+pub struct FnTool<TIn, TOut: Serialize, TErr: Serialize> 
+where for<'de> TIn: Deserialize<'de> {
     function: Box<Fn(TIn, &Environment) -> Result<TOut, TErr> + Send + Sync>
 }
 
 ///
 /// Creates a Tool from a function that can produce an error and uses an environment
 ///
-pub fn make_dynamic_tool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+pub fn make_dynamic_tool<TIn, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr>
+where for<'de> TIn: Deserialize<'de> {
     FnTool { function: Box::new(function) }
 }
 
 ///
 /// Creates a Tool from a function that can produce an error but does not use an environment
 ///
-pub fn make_tool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+pub fn make_tool<TIn, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> 
+where for<'de> TIn: Deserialize<'de> {
     make_dynamic_tool(move |input, _| function(input))
 }
 
 ///
 /// Creates a Tool from a function that cannot produce an error and doesn't use an environment
 ///
-pub fn make_pure_tool<TIn: Deserialize<'static>, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
+pub fn make_pure_tool<TIn, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> 
+where for<'de> TIn: Deserialize<'de> {
     make_dynamic_tool(move |input, _| Ok(function(input)))
 }
 
@@ -88,7 +92,8 @@ where for<'de> TIn: Deserialize<'de>, TOut: Serialize, TErr: Serialize {
 ///
 /// Represents a tool with Rust types
 ///
-pub struct TypedTool<TIn: Serialize, TOut: Deserialize<'static>> {
+pub struct TypedTool<TIn: Serialize, TOut>
+where for<'de> TOut: Deserialize<'de> {
     param1: PhantomData<TIn>,
     param2: PhantomData<TOut>,
     tool: Box<Tool>
