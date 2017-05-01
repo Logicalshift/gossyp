@@ -10,33 +10,33 @@ use super::super::environment::*;
 ///
 /// Represents a tool made from a function
 ///
-pub struct FnTool<TIn: Deserialize, TOut: Serialize, TErr: Serialize> {
+pub struct FnTool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize> {
     function: Box<Fn(TIn, &Environment) -> Result<TOut, TErr> + Send + Sync>
 }
 
 ///
 /// Creates a Tool from a function that can produce an error and uses an environment
 ///
-pub fn make_dynamic_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+pub fn make_dynamic_tool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
     FnTool { function: Box::new(function) }
 }
 
 ///
 /// Creates a Tool from a function that can produce an error but does not use an environment
 ///
-pub fn make_tool<TIn: Deserialize, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
+pub fn make_tool<TIn: Deserialize<'static>, TOut: Serialize, TErr: Serialize, F: 'static+Send+Sync+Fn(TIn) -> Result<TOut, TErr>>(function: F) -> FnTool<TIn, TOut, TErr> {
     make_dynamic_tool(move |input, _| function(input))
 }
 
 ///
 /// Creates a Tool from a function that cannot produce an error and doesn't use an environment
 ///
-pub fn make_pure_tool<TIn: Deserialize, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
+pub fn make_pure_tool<TIn: Deserialize<'static>, TOut: Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(function: F) -> FnTool<TIn, TOut, ()> {
     make_dynamic_tool(move |input, _| Ok(function(input)))
 }
 
 impl<TIn, TOut, TErr> Tool for FnTool<TIn, TOut, TErr> 
-where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
+where for<'de> TIn: Deserialize<'de>, TOut: Serialize, TErr: Serialize {
     fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
         // Decode
         let input_decoded = from_value::<TIn>(input);
@@ -88,7 +88,7 @@ where TIn: Deserialize, TOut: Serialize, TErr: Serialize {
 ///
 /// Represents a tool with Rust types
 ///
-pub struct TypedTool<TIn: Serialize, TOut: Deserialize> {
+pub struct TypedTool<TIn: Serialize, TOut: Deserialize<'static>> {
     param1: PhantomData<TIn>,
     param2: PhantomData<TOut>,
     tool: Box<Tool>
@@ -98,7 +98,8 @@ pub struct TypedTool<TIn: Serialize, TOut: Deserialize> {
     // then doesn't work because the size is unknown
 }
 
-impl<TIn: Serialize, TOut: Deserialize> TypedTool<TIn, TOut> {
+impl<TIn: Serialize, TOut> TypedTool<TIn, TOut> 
+where for<'de> TOut: Deserialize<'de> {
     ///
     /// Creates an object that can be used to invoke a tool with typed parameters instead of pure JSON
     ///
@@ -151,14 +152,16 @@ pub trait TypedEnvironment {
     ///
     /// Retrieves a tool using a Rust interface by name
     ///
-    fn get_typed_tool<TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError>;
+    fn get_typed_tool<TIn: Serialize, TOut>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError>
+    where for<'de> TOut: Deserialize<'de>;
 }
 
 impl<TEnv> TypedEnvironment for TEnv where TEnv: Environment {
     ///
     /// Retrieves a tool using a Rust interface by name
     ///
-    fn get_typed_tool<TIn: Serialize, TOut: Deserialize>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError> {
+    fn get_typed_tool<TIn: Serialize, TOut>(&self, name: &str) -> Result<TypedTool<TIn, TOut>, RetrieveToolError> 
+    where for<'de> TOut: Deserialize<'de> {
         self.get_json_tool(name).map(|tool| TypedTool::from(tool))
     }
 }
