@@ -5,7 +5,7 @@ license = "Apache"
 authors = ["Andrew Hunter <andrew@logicalshift.io>"]
 
 [dependencies]
-serde           = "0.9"
-serde_json      = "0.9"
-serde_derive    = "0.9"
+serde           = "1.0"
+serde_json      = "1.0"
+serde_derive    = "1.0"
 gossyp_base     = { path = '../gossyp_base', version = "0.1.0" }
