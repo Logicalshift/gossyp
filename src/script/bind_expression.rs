@@ -135,7 +135,12 @@ pub fn bind_field_access(field_access: &Box<(Expression, Expression)>, execution
 /// Binds an apply expression (a(parameters))
 ///
 pub fn bind_apply(apply: &Box<(Expression, Expression)>, execution_environment: &ScriptExecutionEnvironment) -> Result<BoundExpression, Value> {
-    unimplemented!();
+    let (ref tool, ref parameters) = **apply;
+
+    let bound_tool          = bind_expression(tool, execution_environment)?;
+    let bound_parameters    = bind_expression(parameters, execution_environment)?;
+
+    Ok(BoundExpression::Apply(Box::new((bound_tool, bound_parameters))))
 }
 
 ///
@@ -241,5 +246,18 @@ mod test {
 
         let map = match result { Ok(BoundExpression::Map(x)) => x, _ => vec![] };
         assert!(match map[0] { (BoundExpression::Value(_, _), BoundExpression::Tool(_, _)) => true, _ => false });
+    }
+
+    #[test]
+    fn can_bind_apply() {
+        let apply_expr          = Expression::Apply(Box::new((Expression::string("\"test\""), Expression::identifier("test"))));
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = bind_expression(&apply_expr, &mut env);
+
+        assert!(match result { Ok(BoundExpression::Apply(_)) => true, _ => false });
     }
 }
