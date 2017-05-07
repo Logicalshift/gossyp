@@ -21,7 +21,7 @@ fn generate_script_error(error: ScriptEvaluationError, script: &Script) -> Value
 ///
 pub fn evaluate_statement(statement: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     match statement {
-        &Script::RunCommand(ref expr)   => evaluate_expression(expr, environment),
+        &Script::RunCommand(ref expr)   => evaluate_unbound_expression(expr, environment),
 
         _                               => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
     }

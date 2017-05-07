@@ -89,7 +89,7 @@ pub fn call_tool(tool_name: &Expression, parameters: Value, environment: &mut Sc
 /// Evaluates an 'apply' expression
 ///
 pub fn apply(&(ref tool, ref parameters): &(Expression, Expression), environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    evaluate_expression(&parameters, environment).and_then(|parameters| {
+    evaluate_unbound_expression(&parameters, environment).and_then(|parameters| {
         call_tool(&tool, parameters, environment)
     })
 }
@@ -101,7 +101,7 @@ pub fn evaluate_array(exprs: &Vec<Expression>, environment: &mut ScriptExecution
     let mut result = vec![];
 
     for expr in exprs.iter() {
-        match evaluate_expression(expr, environment) {
+        match evaluate_unbound_expression(expr, environment) {
             Ok(next) => result.push(next),
             Err(erm) => return Err(erm)
         }
@@ -117,13 +117,13 @@ pub fn evaluate_map(exprs: &Vec<(Expression, Expression)>, environment: &mut Scr
     let mut result = Map::new();
 
     for &(ref key_expr, ref value_expr) in exprs.iter() {
-        let key = match evaluate_expression(key_expr, environment) {
+        let key = match evaluate_unbound_expression(key_expr, environment) {
             Ok(Value::String(key))  => key,
             Ok(_)                   => return Err(generate_expression_error(ScriptEvaluationError::MapKeysMustEvaluateToAString, key_expr)),
             Err(erm)                => return Err(erm)
         };
 
-        let value = match evaluate_expression(value_expr, environment) {
+        let value = match evaluate_unbound_expression(value_expr, environment) {
             Ok(value)   => value,
             Err(erm)    => return Err(erm)
         };
@@ -139,8 +139,8 @@ pub fn evaluate_map(exprs: &Vec<(Expression, Expression)>, environment: &mut Scr
 ///
 pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     // Evaluate the left-hand and right-hand sides of the expression
-    evaluate_expression(lhs, environment)
-        .and_then(|lhs_res| evaluate_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
+    evaluate_unbound_expression(lhs, environment)
+        .and_then(|lhs_res| evaluate_unbound_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
         .and_then(|(lhs_res, rhs_res)| {
             match lhs_res {
                 Value::Array(ref array) => {
@@ -192,7 +192,7 @@ pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut Scri
 ///
 /// Evaluates a single expression
 ///
-pub fn evaluate_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_unbound_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     match expression {
         &Expression::Number(ref n)          => Ok(parse_number(&n.matched)),
         &Expression::String(ref s)          => Ok(Value::String(unquote_string(&s.matched))),
@@ -223,7 +223,7 @@ mod test {
         let string_expr         = Expression::string("\"Foo\"");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&string_expr, &mut env);
+        let result              = evaluate_unbound_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Foo"))));
     }
@@ -233,7 +233,7 @@ mod test {
         let string_expr         = Expression::string("\"Foo\\n\"");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&string_expr, &mut env);
+        let result              = evaluate_unbound_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Foo\n"))));
     }
@@ -243,7 +243,7 @@ mod test {
         let string_expr         = Expression::string("\"\\\"\"");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&string_expr, &mut env);
+        let result              = evaluate_unbound_expression(&string_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("\""))));
     }
@@ -253,7 +253,7 @@ mod test {
         let num_expr            = Expression::number("42");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&num_expr, &mut env);
+        let result              = evaluate_unbound_expression(&num_expr, &mut env);
 
         assert!(result == Ok(json![ 42 ]));
     }
@@ -263,7 +263,7 @@ mod test {
         let num_expr            = Expression::number("42.2");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&num_expr, &mut env);
+        let result              = evaluate_unbound_expression(&num_expr, &mut env);
 
         assert!(result == Ok(json![ 42.2 ]));
     }
@@ -273,7 +273,7 @@ mod test {
         let num_expr            = Expression::number("42e1");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&num_expr, &mut env);
+        let result              = evaluate_unbound_expression(&num_expr, &mut env);
 
         assert!(result == Ok(json![ 42e1 ]));
     }
@@ -283,7 +283,7 @@ mod test {
         let num_expr            = Expression::number("0xabcd");
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&num_expr, &mut env);
+        let result              = evaluate_unbound_expression(&num_expr, &mut env);
 
         assert!(result == Ok(json![ 0xabcd ]));
     }
@@ -293,7 +293,7 @@ mod test {
         let array_expr          = Expression::Array(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&array_expr, &mut env);
+        let result              = evaluate_unbound_expression(&array_expr, &mut env);
 
         assert!(result == Ok(json![ [ 1,2,3 ] ]));
     }
@@ -304,7 +304,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("1"))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result == Ok(json![ 2 ]));
     }
@@ -315,7 +315,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((string_expr, Expression::number("2"))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result == Ok(json![ "c" ]));
     }
@@ -326,7 +326,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("100"))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result.is_err());
     }
@@ -337,7 +337,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::number("-1"))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result.is_err());
     }
@@ -348,7 +348,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((array_expr, Expression::string("\"1\""))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result.is_err());
     }
@@ -358,7 +358,7 @@ mod test {
         let tuple_expr          = Expression::Tuple(vec![Expression::number("1"), Expression::number("2"), Expression::number("3")]);
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&tuple_expr, &mut env);
+        let result              = evaluate_unbound_expression(&tuple_expr, &mut env);
 
         assert!(result == Ok(json![ [ 1,2,3 ] ]));
     }
@@ -368,7 +368,7 @@ mod test {
         let map_expr            = Expression::Map(vec![ (Expression::string("\"Foo\""), Expression::number("1")), (Expression::string("\"Bar\""), Expression::number("2")) ]);
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&map_expr, &mut env);
+        let result              = evaluate_unbound_expression(&map_expr, &mut env);
 
         assert!(result == Ok(json![ { "Foo": 1, "Bar": 2 } ]));
     }
@@ -379,7 +379,7 @@ mod test {
         let lookup_expr         = Expression::Index(Box::new((map_expr, Expression::string("\"Bar\""))));
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&lookup_expr, &mut env);
+        let result              = evaluate_unbound_expression(&lookup_expr, &mut env);
 
         assert!(result == Ok(json![ 2 ]));
     }
@@ -389,7 +389,7 @@ mod test {
         let map_expr            = Expression::Map(vec![ (Expression::string("\"Foo\""), Expression::number("1")), (Expression::string("\"Foo\""), Expression::number("2")) ]);
         let empty_environment   = EmptyEnvironment::new();
         let mut env             = ScriptExecutionEnvironment::new(&empty_environment);
-        let result              = evaluate_expression(&map_expr, &mut env);
+        let result              = evaluate_unbound_expression(&map_expr, &mut env);
 
         assert!(result == Ok(json![ { "Foo": 2 } ]));
     }
@@ -415,7 +415,7 @@ mod test {
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
-        let result              = evaluate_expression(&tool_expr, &mut env);
+        let result              = evaluate_unbound_expression(&tool_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
@@ -428,7 +428,7 @@ mod test {
         tool_environment.define("test", Box::new(make_pure_tool(|s: String| s)));
 
         let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
-        let result              = evaluate_expression(&tool_expr, &mut env);
+        let result              = evaluate_unbound_expression(&tool_expr, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
