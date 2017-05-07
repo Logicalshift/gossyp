@@ -4,107 +4,54 @@ use serde_json::*;
 
 use gossyp_base::*;
 use super::script::*;
+use super::bound_script::*;
+use super::bind_expression::*;
 use super::script_interpreter::*;
 
 ///
 /// Creates an execution error relating to an expression
 ///
-fn generate_expression_error(error: ScriptEvaluationError, expr: &Expression) -> Value {
+fn generate_bound_expression_error(error: ScriptEvaluationError, _expr: &BoundExpression) -> Value {
     json![{
-        "error":                error,
-        "failed-expression":    expr
+        "error":    error
     }]
-}
-
-///
-/// Creates an unquoted version of a string
-/// TODO: remove me (done when binding expression)
-///
-fn unquote_string(string: &str) -> String {
-    let chars: Vec<char>    = string.chars().collect();
-    let mut result          = String::new();
-    let mut index           = 1;
-    while index < chars.len()-1 {
-        // Push character
-        let chr = chars[index];
-
-        match chr {
-            '\\' => { 
-                let quoted = chars[index+1];
-                index += 1;
-                match quoted {
-                    'n' => result.push('\n'),
-                    'r' => result.push('\r'),
-                    't' => result.push('\t'),
-                    quoted => result.push(quoted)
-                }
-            },
-            chr => result.push(chr)
-        }
-
-        // Next character
-        index += 1;
-    }
-
-    result
-}
-
-///
-/// Parses a number string
-/// TODO: moving into bind_expression
-///
-fn parse_number(number: &str) -> Value {
-    if number.contains('.') || number.contains('e') || number.contains('E') {
-        json![ number.parse::<f64>().unwrap() ]
-    } else if number.starts_with("0x") {
-        json![ i64::from_str_radix(&number[2..], 16).unwrap() ]
-    } else {
-        json![ number.parse::<i64>().unwrap() ]
-    }
 }
 
 ///
 /// Attempts to evaluate an expression to a tool
 ///
-pub fn evaluate_expression_to_tool(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Box<Tool>, Value> {
+pub fn evaluate_expression_to_tool<'a>(expression: &'a BoundExpression) -> Result<&'a Box<Tool>, Value> {
     match expression {
-        &Expression::Identifier(ref name)   => environment.get_json_tool(&name.matched).map_err(|_| generate_expression_error(ScriptEvaluationError::ToolNameNotFound, expression)),
-        _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionDoesNotEvaluateToTool, expression))
+        &BoundExpression::Tool(ref tool, ref _token)    => Ok(&*tool),
+        _                                               => Err(generate_bound_expression_error(ScriptEvaluationError::ExpressionDoesNotEvaluateToTool, expression))
     }
 }
 
 ///
 /// Calls an expression representing a tool and calls it with the specified parameters
 ///
-pub fn call_tool(tool_name: &Expression, parameters: Value, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    evaluate_expression_to_tool(tool_name, environment).and_then(|tool| {
-        // TODO: create environment for the tool to run in
-
-        // Invoke the tool and generate the final result
-        environment.invoke_tool(&tool, parameters)
-    })
+pub fn call_tool(tool: &Box<Tool>, parameters: Value, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    environment.invoke_tool(tool, parameters)
 }
 
 ///
 /// Evaluates an 'apply' expression
 ///
-pub fn apply(&(ref tool, ref parameters): &(Expression, Expression), environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    evaluate_unbound_expression(&parameters, environment).and_then(|parameters| {
-        call_tool(&tool, parameters, environment)
-    })
+pub fn apply(&(ref tool, ref parameters): &(BoundExpression, BoundExpression), environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let parameters_value    = evaluate_expression(parameters, environment)?;
+    let applies_to          = evaluate_expression_to_tool(tool)?;
+
+    call_tool(applies_to, parameters_value, environment)
 }
 
 ///
 /// Evaluates a series of expressions into an array
 ///
-pub fn evaluate_array(exprs: &Vec<Expression>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_array(exprs: &Vec<BoundExpression>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     let mut result = vec![];
 
     for expr in exprs.iter() {
-        match evaluate_unbound_expression(expr, environment) {
-            Ok(next) => result.push(next),
-            Err(erm) => return Err(erm)
-        }
+        result.push(evaluate_expression(expr, environment)?)
     }
 
     Ok(Value::Array(result))
@@ -113,20 +60,17 @@ pub fn evaluate_array(exprs: &Vec<Expression>, environment: &mut ScriptExecution
 ///
 /// Evaluates a series of expressions into an array
 ///
-pub fn evaluate_map(exprs: &Vec<(Expression, Expression)>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_map(exprs: &Vec<(BoundExpression, BoundExpression)>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     let mut result = Map::new();
 
     for &(ref key_expr, ref value_expr) in exprs.iter() {
-        let key = match evaluate_unbound_expression(key_expr, environment) {
+        let key = match evaluate_expression(key_expr, environment) {
             Ok(Value::String(key))  => key,
-            Ok(_)                   => return Err(generate_expression_error(ScriptEvaluationError::MapKeysMustEvaluateToAString, key_expr)),
+            Ok(_)                   => return Err(generate_bound_expression_error(ScriptEvaluationError::MapKeysMustEvaluateToAString, key_expr)),
             Err(erm)                => return Err(erm)
         };
 
-        let value = match evaluate_unbound_expression(value_expr, environment) {
-            Ok(value)   => value,
-            Err(erm)    => return Err(erm)
-        };
+        let value = evaluate_expression(value_expr, environment)?;
 
         result.insert(key, value);
     }
@@ -137,10 +81,10 @@ pub fn evaluate_map(exprs: &Vec<(Expression, Expression)>, environment: &mut Scr
 ///
 /// Evaluates an index expression
 ///
-pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_index(lhs: &BoundExpression, rhs: &BoundExpression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     // Evaluate the left-hand and right-hand sides of the expression
-    evaluate_unbound_expression(lhs, environment)
-        .and_then(|lhs_res| evaluate_unbound_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
+    evaluate_expression(lhs, environment)
+        .and_then(|lhs_res| evaluate_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
         .and_then(|(lhs_res, rhs_res)| {
             match lhs_res {
                 Value::Array(ref array) => {
@@ -150,10 +94,10 @@ pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut Scri
                             index.as_u64()
                                 .and_then(|index|       array.get(index as usize))
                                 .map(|indexed_value|    indexed_value.clone())
-                                .ok_or_else(||          generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                                .ok_or_else(||          generate_bound_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
                         },
 
-                        _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
+                        _ => Err(generate_bound_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
                     }
                 },
 
@@ -164,10 +108,10 @@ pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut Scri
                             index.as_u64()
                                 .and_then(|index|       string.chars().nth(index as usize))
                                 .map(|indexed_value|    Value::String(indexed_value.to_string()))
-                                .ok_or_else(||          generate_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
+                                .ok_or_else(||          generate_bound_expression_error(ScriptEvaluationError::IndexOutOfBounds, rhs))
                         },
 
-                        _ => Err(generate_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
+                        _ => Err(generate_bound_expression_error(ScriptEvaluationError::ArrayIndexMustBeANumber, rhs))
                     }
                 },
 
@@ -177,14 +121,14 @@ pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut Scri
                         Value::String(index) => {
                             map.get(&index)
                                 .map(|ref_value|    ref_value.clone())
-                                .ok_or_else(||      generate_expression_error(ScriptEvaluationError::ObjectValueNotPresent, rhs))
+                                .ok_or_else(||      generate_bound_expression_error(ScriptEvaluationError::ObjectValueNotPresent, rhs))
                         },
 
-                        _ => Err(generate_expression_error(ScriptEvaluationError::MapIndexMustBeAString, rhs))
+                        _ => Err(generate_bound_expression_error(ScriptEvaluationError::MapIndexMustBeAString, rhs))
                     }
                 },
 
-                _ => Err(generate_expression_error(ScriptEvaluationError::IndexMustApplyToAnArrayOrAMap, lhs))
+                _ => Err(generate_bound_expression_error(ScriptEvaluationError::IndexMustApplyToAnArrayOrAMap, lhs))
             }
         })
 }
@@ -192,25 +136,35 @@ pub fn evaluate_index(lhs: &Expression, rhs: &Expression, environment: &mut Scri
 ///
 /// Evaluates a single expression
 ///
-pub fn evaluate_unbound_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_expression(expression: &BoundExpression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     match expression {
-        &Expression::Number(ref n)          => Ok(parse_number(&n.matched)),
-        &Expression::String(ref s)          => Ok(Value::String(unquote_string(&s.matched))),
+        &BoundExpression::Value(ref value, ref _token)          => Ok(value.clone()),
 
-        &Expression::Identifier(_)          => call_tool(expression, Value::Null, environment),
-        &Expression::Apply(ref expr)        => apply(&*expr, environment),
+        &BoundExpression::Tool(ref tool, ref _token)            => call_tool(tool, Value::Null, environment),
+        &BoundExpression::Variable(ref _var_num, ref _token)    => unimplemented!(),
+        &BoundExpression::Field(ref _field_name, ref _token)    => unimplemented!(),
+        
+        &BoundExpression::Array(ref values)                     => evaluate_array(values, environment),
+        &BoundExpression::Tuple(ref values)                     => evaluate_array(values, environment),
+        &BoundExpression::Map(ref values)                       => evaluate_map(values, environment),
 
-        &Expression::Array(ref exprs)       => evaluate_array(exprs, environment),
-        &Expression::Tuple(ref exprs)       => evaluate_array(exprs, environment),
-        &Expression::Map(ref exprs)         => evaluate_map(exprs, environment),
+        &BoundExpression::FieldAccess(ref _accessor)            => unimplemented!(),
+        &BoundExpression::Apply(ref application)                => apply(&*application, environment),
 
-        &Expression::Index(ref boxed_exprs) => {
-            let (ref lhs, ref rhs) = **boxed_exprs;
+        &BoundExpression::Index(ref index)                      => {
+            let (ref lhs, ref rhs) = **index;
             evaluate_index(lhs, rhs, environment)
         },
-
-        _                                   => Err(generate_expression_error(ScriptEvaluationError::ExpressionNotImplemented, expression))
     }
+}
+
+///
+/// Evaluates a single expression
+///
+pub fn evaluate_unbound_expression(expression: &Expression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let bound = bind_expression(expression, environment)?;
+
+    evaluate_expression(&bound, environment)
 }
 
 #[cfg(test)]
@@ -392,19 +346,6 @@ mod test {
         let result              = evaluate_unbound_expression(&map_expr, &mut env);
 
         assert!(result == Ok(json![ { "Foo": 2 } ]));
-    }
-
-    #[test]
-    fn can_call_tool() {
-        let tool_expr           = Expression::identifier("test");
-        let tool_environment    = DynamicEnvironment::new();
-
-        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
-
-        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
-        let result              = call_tool(&tool_expr, Value::Null, &mut env);
-
-        assert!(result == Ok(Value::String(String::from("Success"))));
     }
 
     #[test]
