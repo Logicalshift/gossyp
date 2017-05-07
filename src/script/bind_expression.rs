@@ -79,10 +79,7 @@ fn bind_sequence(items: &Vec<Expression>, execution_environment: &ScriptExecutio
     let mut result = vec![];
 
     for expr in items {
-        match bind_expression(expr, execution_environment) {
-            Ok(val)     => result.push(val),
-            Err(erm)    => return Err(erm)
-        }
+        result.push(bind_expression(expr, execution_environment)?);
     }
 
     Ok(result)
@@ -111,15 +108,8 @@ pub fn bind_map(items: &Vec<(Expression, Expression)>, execution_environment: &S
     let mut result = vec![];
 
     for &(ref lexpr, ref rexpr) in items {
-        let lbound = match bind_expression(lexpr, execution_environment) {
-            Ok(val)     => val,
-            Err(erm)    => return Err(erm)
-        };
-
-        let rbound = match bind_expression(rexpr, execution_environment) {
-            Ok(val)     => val,
-            Err(erm)    => return Err(erm)
-        };
+        let lbound = bind_expression(lexpr, execution_environment)?;
+        let rbound = bind_expression(rexpr, execution_environment)?;
 
         result.push((lbound, rbound));
     }
