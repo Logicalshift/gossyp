@@ -6,6 +6,7 @@ use std::result::Result;
 use std::error::Error;
 use std::char;
 use std::iter::*;
+use std::sync::*;
 
 use serde_json::*;
 
@@ -434,12 +435,13 @@ impl Tool for LexTool {
 ///
 /// Tool that reads a string and generates a lexed array of matches
 ///
+#[derive(Clone)]
 pub struct StringLexingTool {
     /// Matches up symbols
-    matcher: SymbolRangeDfa<char, usize>,
+    matcher: Arc<SymbolRangeDfa<char, usize>>,
 
     /// Matches IDs from the matcher with strings to return in the results
-    symbol_names: Vec<String>
+    symbol_names: Arc<Vec<String>>
 }
 
 impl StringLexingTool {
@@ -465,7 +467,7 @@ impl StringLexingTool {
         let prepared = token_matcher.prepare_to_match();
 
         // This is what we use in the lexing tool
-        StringLexingTool { matcher: prepared, symbol_names: symbol_names }
+        StringLexingTool { matcher: Arc::new(prepared), symbol_names: Arc::new(symbol_names) }
     }
 
     ///
