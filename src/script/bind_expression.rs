@@ -121,7 +121,12 @@ pub fn bind_map(items: &Vec<(Expression, Expression)>, execution_environment: &S
 /// Binds an index expression (a[b])
 ///
 pub fn bind_index(index: &Box<(Expression, Expression)>, execution_environment: &ScriptExecutionEnvironment) -> Result<BoundExpression, Value> {
-    unimplemented!();
+    let (ref tool, ref indexer) = **index;
+
+    let bound_tool      = bind_expression(tool, execution_environment)?;
+    let bound_indexer   = bind_expression(indexer, execution_environment)?;
+
+    Ok(BoundExpression::Index(Box::new((bound_tool, bound_indexer))))
 }
 
 ///
@@ -259,5 +264,18 @@ mod test {
         let result              = bind_expression(&apply_expr, &mut env);
 
         assert!(match result { Ok(BoundExpression::Apply(_)) => true, _ => false });
+    }
+
+    #[test]
+    fn can_bind_index() {
+        let index_expr          = Expression::Index(Box::new((Expression::string("\"test\""), Expression::identifier("test"))));
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = bind_expression(&index_expr, &mut env);
+
+        assert!(match result { Ok(BoundExpression::Index(_)) => true, _ => false });
     }
 }
