@@ -8,6 +8,6 @@ authors = ["Andrew Hunter <andrew@logicalshift.io>"]
 serde               = "1.0"
 serde_json          = "1.0"
 serde_derive        = "1.0"
-gossyp_base         = { path = '../gossyp_base', version = "0.1.0" }
-gossyp_toolkit      = { path = '../gossyp_toolkit', version = "0.1.0" }
-gossyp_lang         = { path = '../gossyp_lang', version = "0.1.0" }
+gossyp_base         = { path = 'gossyp_base', version = "0.1.0" }
+gossyp_toolkit      = { path = 'gossyp_toolkit', version = "0.1.0" }
+gossyp_lang         = { path = 'gossyp_lang', version = "0.1.0" }
