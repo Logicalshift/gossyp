@@ -32,10 +32,7 @@ pub enum BindingResult {
 /// A binding environment can be used to allocate variable values that will be used
 /// during execution of a script.
 ///
-pub struct BindingEnvironment<'a> {
-    /// The parent of this binding environment (for creating binding hierarchies)
-    parent: Option<&'a mut BindingEnvironment<'a>>,
-
+struct BaseBindingEnvironment<'a> {
     /// The external environment that contains tools we can bind to
     environment: &'a Environment,
 
@@ -46,54 +43,94 @@ pub struct BindingEnvironment<'a> {
     bindings: HashMap<String, u32>
 }
 
-impl<'a> BindingEnvironment<'a> {
+///
+/// A child environment for a base environment
+///
+struct ChildBindingEnvironment<'short, 'long: 'short> {
+    /// The base binding environment that this child environment is for
+    base_environment: &'short mut BaseBindingEnvironment<'long>,
+
+    /// The parent environment for this environment (used when looking up variables further up the heirarchy)
+    parent_environment: Option<&'short ChildBindingEnvironment<'short, 'long>>,
+
+    /// The current set of binding allocations
+    bindings: HashMap<String, u32>
+}
+
+///
+/// Trait implemented by objects that represent a binding environment
+///
+pub trait BindingEnvironment {
+    ///
+    /// Allocates a variable location without assigning a name
+    ///
+    fn allocate_location(&mut self) -> u32;
+
+    ///
+    /// Allocates a variable location with an assigned name (which must not 
+    /// already be in use)
+    ///
+    fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError>;
+
+    ///
+    /// Looks up a variable location by name
+    ///
+    fn lookup(&self, name: &str) -> BindingResult;
+
+    ///
+    /// Returns the total number of variables allocated for this environment
+    ///
+    fn get_number_of_variables(&self) -> u32;
+
+    ///
+    /// Creates a sub environment
+    ///
+    /// This allows names to be re-used with new variables, but existing variables
+    /// will continue to refer to their current locations
+    ///
+    fn create_sub_environment<'a>(&'a mut self) -> Box<BindingEnvironment + 'a>;
+}
+
+impl BindingEnvironment {
     ///
     /// Creates a new binding environment. New variables will be mapped from 0
     ///
-    pub fn new(environment: &'a Environment) -> BindingEnvironment<'a> {
-        BindingEnvironment { 
-            parent:             None, 
+    pub fn new<'a>(environment: &'a Environment) -> Box<BindingEnvironment+'a> {
+        Box::new(BaseBindingEnvironment { 
             environment:        environment, 
             next_to_allocate:   0, 
             bindings:           HashMap::new() 
-        }
+        })
     }
+}
 
+impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     ///
     /// Creates a new sub-environment, where new variable names can be a
     ///
-    pub fn create_sub_environment<'b: 'a>(&'b mut self) -> BindingEnvironment<'a> {
-        BindingEnvironment { 
-            next_to_allocate:   self.next_to_allocate,
-            environment:        self.environment,
-            parent:             Some(self), 
+    fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
+        Box::new(ChildBindingEnvironment {
+            base_environment:   self,
+            parent_environment: None,
             bindings:           HashMap::new()
-        }
+        })
     }
 
     ///
     /// Allocates a new variable location in this binding (without assigning a name to it)
     ///
-    pub fn allocate_location(&mut self) -> u32 {
-        if let Some(ref mut parent) = self.parent {
-            // Allocate up the chain if this is a chained environment
-            let allocation = parent.allocate_location();
-            self.next_to_allocate = allocation + 1;
+    fn allocate_location(&mut self) -> u32 {
+        // If there's no parent, just allocate directly
+        let allocation          = self.next_to_allocate;
+        self.next_to_allocate   = allocation + 1;
 
-            allocation
-        } else {
-            // If there's no parent, just allocate directly
-            let allocation          = self.next_to_allocate;
-            self.next_to_allocate   = allocation + 1;
-
-            allocation
-        }
+        allocation
     }
 
     ///
     /// Allocates a new variable
     ///
-    pub fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
+    fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
         let name_string = String::from(name);
 
         if self.bindings.contains_key(&name_string) {
@@ -111,13 +148,10 @@ impl<'a> BindingEnvironment<'a> {
     ///
     /// Looks up a name in this binding environment
     ///
-    pub fn lookup(&self, name: &str) -> BindingResult {
+    fn lookup(&self, name: &str) -> BindingResult {
         if let Some(variable) = self.bindings.get(&String::from(name)) {
             // Try to retrieve as a variable directly from this environment
             BindingResult::Variable(*variable)
-        } else if let Some(ref parent) = self.parent {
-            // Try to retrieve from the parent environment if there is one
-            parent.lookup(name)
         } else {
             // Try to retrieve from the environment
             let tool_or_error = self.environment.get_json_tool(name);
@@ -132,8 +166,45 @@ impl<'a> BindingEnvironment<'a> {
     ///
     /// Returns the number of variables used in this environment
     ///
-    pub fn get_number_of_variables(&self) -> u32 {
+    fn get_number_of_variables(&self) -> u32 {
         self.next_to_allocate
+    }
+}
+
+impl<'short, 'long> BindingEnvironment for ChildBindingEnvironment<'short, 'long> {
+    fn allocate_location(&mut self) -> u32 {
+        self.base_environment.allocate_location()
+    }
+
+    fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
+        let name_string = String::from(name);
+
+        if self.bindings.contains_key(&name_string) {
+            // Variable name is already taken
+            Err(BindingError::AlreadyInUse)
+        } else {
+            // Can assign this location to value
+            let allocation = self.allocate_location();
+            self.bindings.insert(name_string, allocation);
+
+            Ok(allocation)
+        }
+    }
+
+    fn lookup(&self, name: &str) -> BindingResult {
+        unimplemented!()
+    }
+
+    fn get_number_of_variables(&self) -> u32 {
+        self.base_environment.get_number_of_variables()
+    }
+
+    fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
+        Box::new(ChildBindingEnvironment {
+            parent_environment: None,
+            base_environment:   self.base_environment,
+            bindings:           HashMap::new()
+        })
     }
 }
 
@@ -189,7 +260,7 @@ mod test {
             assert!(child_environment.allocate_location() == 1);
         }
 
-        // TODO! (Need to fix lifetime) assert!(binding.allocate_location() == 2);
+        assert!(binding.allocate_location() == 2);
     }
     
     #[test]
