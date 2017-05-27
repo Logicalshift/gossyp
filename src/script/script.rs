@@ -109,7 +109,7 @@ pub enum Script {
     /// Run a command, with parameters
     RunCommand(Expression),
 
-    /// Runs a sequence of comments
+    /// Runs a sequence of commands
     Sequence(Vec<Script>),
 
     /// let a = b 
