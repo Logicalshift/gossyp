@@ -11,12 +11,14 @@ use gossyp_base::basic::*;
 
 use super::script::*;
 use super::evaluate_statement::*;
+use super::bind_statement::*;
+use super::bound_script::*;
 
 ///
 /// A tool representing a script that will be interepreted
 ///
 pub struct InterpretedScriptTool {
-    statements: Vec<Script>
+    statements: Script
 }
 
 ///
@@ -74,7 +76,7 @@ impl InterpretedScriptTool {
     /// Creates a new interpreted script tool from a set of statements
     ///
     pub fn from_statements(statements: Vec<Script>) -> InterpretedScriptTool {
-        InterpretedScriptTool { statements: statements }
+        InterpretedScriptTool { statements: Script::Sequence(statements) }
     }
 }
 
@@ -83,11 +85,18 @@ impl Tool for InterpretedScriptTool {
         // Make the environment that this script will run in
         let mut script_environment = ScriptExecutionEnvironment::new(environment);
 
-        // TODO: bind the values contained within the script
+        // Bind the values contained within the script
+        let bound_script = bind_statement(&self.statements, &mut script_environment)?;
+
+        // Get the sequence we'll execute for this script
+        let execution_statements = match bound_script {
+            BoundScript::Sequence(items)    => items,
+            not_sequence                    => vec![not_sequence]
+        };
 
         // Execute the script
         let mut result = vec![];
-        for statement in self.statements.iter() {
+        for statement in execution_statements.iter() {
             // Evaluate the next statement
             let next_result = match evaluate_statement(statement, &mut script_environment) {
                 Ok(result) => result,
