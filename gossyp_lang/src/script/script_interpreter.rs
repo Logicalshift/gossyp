@@ -97,6 +97,9 @@ impl Tool for InterpretedScriptTool {
 /// Represents an execution environment for a running script
 ///
 pub struct ScriptExecutionEnvironment<'a> {
+    /// Current values of the variables in this environment
+    variable_values: Vec<Value>,
+
     /// The environment where tools are drawn from
     parent_environment: &'a Environment
 }
@@ -106,7 +109,7 @@ impl<'a> ScriptExecutionEnvironment<'a> {
     /// Creates a new script execution environment
     ///
     pub fn new(parent_environment: &'a Environment) -> ScriptExecutionEnvironment<'a> {
-        ScriptExecutionEnvironment { parent_environment: parent_environment }
+        ScriptExecutionEnvironment { variable_values: vec![], parent_environment: parent_environment }
     }
 
     ///
