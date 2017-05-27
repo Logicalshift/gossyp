@@ -88,25 +88,8 @@ impl Tool for InterpretedScriptTool {
         // Bind the values contained within the script
         let bound_script = bind_statement(&self.statements, &mut script_environment)?;
 
-        // Get the sequence we'll execute for this script
-        let execution_statements = match bound_script {
-            BoundScript::Sequence(items)    => items,
-            not_sequence                    => vec![not_sequence]
-        };
-
-        // Execute the script
-        let mut result = vec![];
-        for statement in execution_statements.iter() {
-            // Evaluate the next statement
-            let next_result = evaluate_statement(statement, &mut script_environment)?;
-
-            // The script result is built up from the result of each statement
-            // TODO: unless there's something like a return statement?
-            result.push(next_result);
-        }
-
-        // Script is done
-        Ok(Value::Array(result))
+        // Evaluate them
+        evaluate_statement(&bound_script, &mut script_environment)
     }
 }
 
