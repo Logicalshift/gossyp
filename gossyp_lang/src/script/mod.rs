@@ -3,6 +3,7 @@ pub mod parse_script_tool;
 pub mod script;
 pub mod bound_script;
 pub mod script_interpreter;
+pub mod binding_environment;
 pub mod bind_expression;
 pub mod bind_statement;
 pub mod evaluate_statement;
