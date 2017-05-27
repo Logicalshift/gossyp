@@ -1,0 +1,183 @@
+[
+    {
+        "symbol_name": "let",
+        "match_rule":  "let"
+    },
+    {
+        "symbol_name": "var",
+        "match_rule":  "var"
+    },
+    {
+        "symbol_name": "if",
+        "match_rule":  "if"
+    },
+    {
+        "symbol_name": "using",
+        "match_rule":  "using"
+    },
+    {
+        "symbol_name": "while",
+        "match_rule":  "while"
+    },
+    {
+        "symbol_name": "do",
+        "match_rule":  "do"
+    },
+    {
+        "symbol_name": "loop",
+        "match_rule":  "loop"
+    },
+    {
+        "symbol_name": "for",
+        "match_rule":  "for"
+    },
+    {
+        "symbol_name": "in",
+        "match_rule":  "in"
+    },
+    {
+        "symbol_name": "def",
+        "match_rule":  "def"
+    },
+
+    {
+        "symbol_name": ".",
+        "match_rule":  "\\."
+    },
+    {
+        "symbol_name": ",",
+        "match_rule":  ","
+    },
+    {
+        "symbol_name": ":",
+        "match_rule":  ":"
+    },
+    {
+        "symbol_name": "+",
+        "match_rule":  "\\+"
+    },
+    {
+        "symbol_name": "-",
+        "match_rule":  "-"
+    },
+    {
+        "symbol_name": "*",
+        "match_rule":  "*"
+    },
+    {
+        "symbol_name": "/",
+        "match_rule":  "/"
+    },
+    {
+        "symbol_name": "|",
+        "match_rule":  "\\|"
+    },
+    {
+        "symbol_name": "&",
+        "match_rule":  "\\&"
+    },
+    {
+        "symbol_name": "=",
+        "match_rule":  "="
+    },
+    {
+        "symbol_name": "==",
+        "match_rule":  "=="
+    },
+    {
+        "symbol_name": "!=",
+        "match_rule":  "!="
+    },
+    {
+        "symbol_name": ">",
+        "match_rule":  ">"
+    },
+    {
+        "symbol_name": "<",
+        "match_rule":  "<"
+    },
+    {
+        "symbol_name": "<=",
+        "match_rule":  "<="
+    },
+    {
+        "symbol_name": ">=",
+        "match_rule":  ">="
+    },
+    {
+        "symbol_name": "!",
+        "match_rule":  "!"
+    },
+    {
+        "symbol_name": "?",
+        "match_rule":  "\\?"
+    },
+    {
+        "symbol_name": "||",
+        "match_rule":  "\\|\\|"
+    },
+    {
+        "symbol_name": "&&",
+        "match_rule":  "&&"
+    },
+    {
+        "symbol_name": "(",
+        "match_rule":  "\\("
+    },
+    {
+        "symbol_name": ")",
+        "match_rule":  "\\)"
+    },
+    {
+        "symbol_name": "{",
+        "match_rule":  "{"
+    },
+    {
+        "symbol_name": "}",
+        "match_rule":  "}"
+    },
+    {
+        "symbol_name": "[",
+        "match_rule":  "\\["
+    },
+    {
+        "symbol_name": "]",
+        "match_rule":  "\\]"
+    },
+
+    {
+        "symbol_name": "String",
+        "match_rule":  "\"(([^\"])|(\\\\\"))*\""
+    },
+    {
+        "symbol_name": "Number",
+        "match_rule":  "-?([0-9]*(\\.[0-9]+)?)|(\\.[0-9]+)(e|E[0-9]+)?"
+    },
+    {
+        "symbol_name": "HexNumber",
+        "match_rule":  "0x[0-9A-Fa-f]+"
+    },
+
+    {
+        "symbol_name": "Identifier",
+        "match_rule":  "[A-Za-zĀ-￰＀]([A-Za-z0-9Ā-￰＀_*+]|-)*"
+    },
+
+    {
+        "symbol_name": "Newline",
+        "match_rule":  "\\n"
+    },
+    {
+        "symbol_name": "Whitespace",
+        "match_rule":  "\\w*"
+    },
+    {
+        "symbol_name": "Comment",
+        "match_rule":  "(#[^\n]*)|(//[^\n]*)"
+    },
+
+    {
+        "symbol_name": "Unknown",
+        "match_rule":  "."
+    }
+]
