@@ -129,11 +129,23 @@ pub fn bind_index(index: &Box<(Expression, Expression)>, execution_environment: 
     Ok(BoundExpression::Index(Box::new((bound_tool, bound_indexer))))
 }
 
+pub fn bind_field_expression(expr: &Expression) -> Result<BoundExpression, Value> {
+    match expr {
+        &Expression::Identifier(ref token)  => Ok(BoundExpression::Field(token.matched.clone(), token.clone())),
+        _                                   => Err(generate_expression_error(ScriptEvaluationError::FieldMustBeIdentifier, expr))
+    }
+}
+
 ///
 /// Binds a field access expression (a.b)
 ///
 pub fn bind_field_access(field_access: &Box<(Expression, Expression)>, execution_environment: &ScriptExecutionEnvironment) -> Result<BoundExpression, Value> {
-    unimplemented!();
+    let (ref access_from, ref field) = **field_access;
+
+    let access_from_expr    = bind_expression(access_from, execution_environment)?;
+    let field_expr          = bind_field_expression(field)?;
+
+    Ok(BoundExpression::FieldAccess(Box::new((access_from_expr, field_expr))))
 }
 
 ///
@@ -277,5 +289,26 @@ mod test {
         let result              = bind_expression(&index_expr, &mut env);
 
         assert!(match result { Ok(BoundExpression::Index(_)) => true, _ => false });
+    }
+
+    #[test]
+    fn can_bind_field_expression() {
+        let field_expr  = Expression::identifier("test");
+        let result      = bind_field_expression(&field_expr);
+
+        assert!(match result { Ok(BoundExpression::Field(_, _)) => true, _ => false });
+    }
+
+    #[test]
+    fn can_bind_field_access() {
+        let field_access_expr   = Expression::FieldAccess(Box::new((Expression::identifier("test"), Expression::identifier("field"))));
+        let tool_environment    = DynamicEnvironment::new();
+
+        tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
+
+        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
+        let result              = bind_expression(&field_access_expr, &mut env);
+
+        assert!(match result { Ok(BoundExpression::FieldAccess(_)) => true, _ => false });
     }
 }

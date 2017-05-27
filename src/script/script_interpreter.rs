@@ -52,7 +52,10 @@ pub enum ScriptEvaluationError {
     IndexOutOfBounds,
 
     /// Object value is not present in a map
-    ObjectValueNotPresent
+    ObjectValueNotPresent,
+
+    /// In a field access (a.b), the '.b' part must be an identifier
+    FieldMustBeIdentifier
 }
 
 impl InterpretedScriptTool {
