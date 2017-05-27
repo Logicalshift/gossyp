@@ -98,12 +98,7 @@ impl Tool for InterpretedScriptTool {
         let mut result = vec![];
         for statement in execution_statements.iter() {
             // Evaluate the next statement
-            let next_result = match evaluate_statement(statement, &mut script_environment) {
-                Ok(result) => result,
-
-                // Fail immediately if any statement generates an error
-                Err(fail) => return Err(fail)
-            };
+            let next_result = evaluate_statement(statement, &mut script_environment)?;
 
             // The script result is built up from the result of each statement
             // TODO: unless there's something like a return statement?
