@@ -9,10 +9,9 @@ use serde_json::*;
 use gossyp_base::*;
 use gossyp_base::basic::*;
 
-use super::script::*;
-use super::evaluate_statement::*;
-use super::bind_statement::*;
-use super::bound_script::*;
+use super::script::Script;
+use super::evaluate_statement::evaluate_statement;
+use super::bind_statement::bind_statement;
 
 ///
 /// A tool representing a script that will be interepreted
