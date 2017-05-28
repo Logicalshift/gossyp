@@ -49,6 +49,9 @@ pub enum BoundExpression {
 /// Represents a script where the expressions have been bound to particular locations
 ///
 pub enum BoundScript {
+    /// Allocates space for variables before running a script
+    AllocateVariables(u32, Box<BoundScript>),
+
     /// Runs a command
     RunCommand(BoundExpression),
 
