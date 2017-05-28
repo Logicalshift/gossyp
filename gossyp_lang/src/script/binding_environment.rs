@@ -257,6 +257,44 @@ mod test {
 
         assert!(binding.allocate_location() == 2);
     }
+
+    #[test]
+    fn can_reallocate_variable_name_in_child_environment() {
+        let empty_environment   = EmptyEnvironment::new();
+        let mut binding         = BindingEnvironment::new(&empty_environment);
+
+        binding.allocate_variable("test");
+        assert!(match binding.lookup("test") { BindingResult::Variable(0) => true, _ => false });
+
+        {
+            let mut child_environment = binding.create_sub_environment();
+            assert!(child_environment.allocate_variable("test") == Ok(1));
+        }
+
+        assert!(match binding.lookup("test") { BindingResult::Variable(0) => true, _ => false });
+    }
+
+    #[test]
+    fn child_environment_lookup_falls_through_to_parent() {
+        let empty_environment   = EmptyEnvironment::new();
+        let mut binding         = BindingEnvironment::new(&empty_environment);
+
+        binding.allocate_variable("test1");
+        binding.allocate_variable("test2");
+        assert!(match binding.lookup("test1") { BindingResult::Variable(0) => true, _ => false });
+        assert!(match binding.lookup("test2") { BindingResult::Variable(1) => true, _ => false });
+
+        {
+            let mut child_environment = binding.create_sub_environment();
+            assert!(child_environment.allocate_variable("test1") == Ok(2));
+
+            assert!(match child_environment.lookup("test1") { BindingResult::Variable(2) => true, _ => false });
+            assert!(match child_environment.lookup("test2") { BindingResult::Variable(1) => true, _ => false });
+        }
+
+        assert!(match binding.lookup("test1") { BindingResult::Variable(0) => true, _ => false });
+        assert!(match binding.lookup("test2") { BindingResult::Variable(1) => true, _ => false });
+    }
     
     #[test]
     fn can_allocate_variable_name() {
