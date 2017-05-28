@@ -46,12 +46,9 @@ struct BaseBindingEnvironment<'a> {
 ///
 /// A child environment for a base environment
 ///
-struct ChildBindingEnvironment<'short, 'long: 'short> {
+struct ChildBindingEnvironment<'a> {
     /// The base binding environment that this child environment is for
-    base_environment: &'short mut BaseBindingEnvironment<'long>,
-
-    /// The parent environment for this environment (used when looking up variables further up the heirarchy)
-    parent_environment: Option<&'short ChildBindingEnvironment<'short, 'long>>,
+    base_environment: &'a mut BindingEnvironment,
 
     /// The current set of binding allocations
     bindings: HashMap<String, u32>
@@ -111,7 +108,6 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
         Box::new(ChildBindingEnvironment {
             base_environment:   self,
-            parent_environment: None,
             bindings:           HashMap::new()
         })
     }
@@ -131,15 +127,13 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     /// Allocates a new variable
     ///
     fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
-        let name_string = String::from(name);
-
-        if self.bindings.contains_key(&name_string) {
+        if self.bindings.contains_key(name) {
             // Variable name is already taken
             Err(BindingError::AlreadyInUse)
         } else {
             // Can assign this location to value
             let allocation = self.allocate_location();
-            self.bindings.insert(name_string, allocation);
+            self.bindings.insert(String::from(name), allocation);
 
             Ok(allocation)
         }
@@ -149,7 +143,7 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     /// Looks up a name in this binding environment
     ///
     fn lookup(&self, name: &str) -> BindingResult {
-        if let Some(variable) = self.bindings.get(&String::from(name)) {
+        if let Some(variable) = self.bindings.get(name) {
             // Try to retrieve as a variable directly from this environment
             BindingResult::Variable(*variable)
         } else {
@@ -171,28 +165,30 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     }
 }
 
-impl<'short, 'long> BindingEnvironment for ChildBindingEnvironment<'short, 'long> {
+impl<'a> BindingEnvironment for ChildBindingEnvironment<'a> {
     fn allocate_location(&mut self) -> u32 {
         self.base_environment.allocate_location()
     }
 
     fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
-        let name_string = String::from(name);
-
-        if self.bindings.contains_key(&name_string) {
+        if self.bindings.contains_key(name) {
             // Variable name is already taken
             Err(BindingError::AlreadyInUse)
         } else {
             // Can assign this location to value
             let allocation = self.allocate_location();
-            self.bindings.insert(name_string, allocation);
+            self.bindings.insert(String::from(name), allocation);
 
             Ok(allocation)
         }
     }
 
     fn lookup(&self, name: &str) -> BindingResult {
-        unimplemented!()
+        if let Some(variable) = self.bindings.get(name) {
+            BindingResult::Variable(*variable)
+        } else {
+            self.base_environment.lookup(name)
+        }
     }
 
     fn get_number_of_variables(&self) -> u32 {
@@ -201,8 +197,7 @@ impl<'short, 'long> BindingEnvironment for ChildBindingEnvironment<'short, 'long
 
     fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
         Box::new(ChildBindingEnvironment {
-            parent_environment: None,
-            base_environment:   self.base_environment,
+            base_environment:   self,
             bindings:           HashMap::new()
         })
     }
