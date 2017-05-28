@@ -28,7 +28,7 @@ pub enum BoundExpression {
     Tool(Rc<Box<Tool>>, ScriptToken),
 
     /// Identifier that was bound to a particular variable from the script environment
-    Variable(u32, ScriptLexerToken),
+    Variable(u32, ScriptToken),
 
     /// Identifier that is the name of a field
     Field(String, ScriptToken),

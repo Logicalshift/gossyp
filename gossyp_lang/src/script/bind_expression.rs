@@ -70,7 +70,7 @@ pub fn bind_tool(tool_name: &ScriptToken, expr: &Expression, binding_environment
 
     match bound_to {
         BindingResult::Tool(tool)           => Ok(BoundExpression::Tool(Rc::new(tool), tool_name.clone())),
-        BindingResult::Variable(variable)   => unimplemented!(),
+        BindingResult::Variable(variable)   => Ok(BoundExpression::Variable(variable, tool_name.clone())),
         BindingResult::Error(_)             => Err(generate_expression_error(ScriptEvaluationError::ExpressionDoesNotEvaluateToTool, expr))
     }
 }

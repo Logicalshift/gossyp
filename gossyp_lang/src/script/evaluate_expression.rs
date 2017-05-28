@@ -19,7 +19,7 @@ pub enum FailedBoundExpression {
     Tuple(Vec<FailedBoundExpression>),
     Map(Vec<(FailedBoundExpression, FailedBoundExpression)>),
     Tool(ScriptToken),
-    Variable(ScriptLexerToken),
+    Variable(ScriptToken),
     Field(ScriptToken),
     Index(Box<(FailedBoundExpression, FailedBoundExpression)>),
     FieldAccess(Box<(FailedBoundExpression, FailedBoundExpression)>),
