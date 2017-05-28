@@ -139,4 +139,15 @@ impl<'a> ScriptExecutionEnvironment<'a> {
     pub fn get_environment(&self) -> &'a Environment {
         self.parent_environment
     }
+
+    ///
+    /// Allocates variables in this environment
+    ///
+    #[inline]
+    pub fn allocate_variables(&mut self, num_variables: u32) {
+        // Just create any new variables with null values
+        while self.variable_values.len() < num_variables as usize {
+            self.variable_values.push(Value::Null);
+        }
+    }
 }

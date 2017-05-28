@@ -75,14 +75,23 @@ pub fn evaluate_sequence(sequence: &Vec<BoundScript>, environment: &mut ScriptEx
 }
 
 ///
+/// Allocates variables before continuing
+///
+fn evaluate_allocate_variables(num_variables: u32, continuation: &BoundScript, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    environment.allocate_variables(num_variables);
+    evaluate_statement(continuation, environment)
+}
+
+///
 /// Evaluates the result of executing a single statement
 ///
 pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     match statement {
-        &BoundScript::RunCommand(ref expr)  => evaluate_expression(expr, environment),
-        &BoundScript::Sequence(ref steps)   => evaluate_sequence(steps, environment),
+        &BoundScript::AllocateVariables(num, ref continuation)  => evaluate_allocate_variables(num, &**continuation, environment),
+        &BoundScript::RunCommand(ref expr)                      => evaluate_expression(expr, environment),
+        &BoundScript::Sequence(ref steps)                       => evaluate_sequence(steps, environment),
 
-        _                                   => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
+        _                                                       => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
     }
 }
 
