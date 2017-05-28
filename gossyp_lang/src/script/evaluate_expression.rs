@@ -192,7 +192,7 @@ pub fn evaluate_expression(expression: &BoundExpression, environment: &ScriptExe
         &BoundExpression::Value(ref value, ref _token)          => Ok(value.clone()),
 
         &BoundExpression::Tool(ref tool, ref _token)            => call_tool(tool, Value::Null, environment),
-        &BoundExpression::Variable(ref _var_num, ref _token)    => unimplemented!(),
+        &BoundExpression::Variable(var_num, ref _token)         => Ok(environment.get_variable(var_num).clone()),
         &BoundExpression::Field(ref _field_name, ref _token)    => unimplemented!(),
         
         &BoundExpression::Array(ref values)                     => evaluate_array(values, environment),

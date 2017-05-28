@@ -83,6 +83,16 @@ fn evaluate_allocate_variables(num_variables: u32, continuation: &BoundScript, e
 }
 
 ///
+/// Assigns a value to a particular variable
+///
+fn evaluate_assignment(variable_index: u32, expr: &BoundExpression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let expression_value = evaluate_expression(expr, environment)?;
+    environment.set_variable(variable_index, Box::new(expression_value.clone()));
+
+    Ok(expression_value)
+}
+
+///
 /// Evaluates the result of executing a single statement
 ///
 pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
@@ -90,6 +100,8 @@ pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecu
         &BoundScript::AllocateVariables(num, ref continuation)  => evaluate_allocate_variables(num, &**continuation, environment),
         &BoundScript::RunCommand(ref expr)                      => evaluate_expression(expr, environment),
         &BoundScript::Sequence(ref steps)                       => evaluate_sequence(steps, environment),
+        &BoundScript::Var(index, ref expr, _)                   => evaluate_assignment(index, expr, environment),
+        &BoundScript::Assign(index, ref expr, _)                => evaluate_assignment(index, expr, environment),
 
         _                                                       => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
     }

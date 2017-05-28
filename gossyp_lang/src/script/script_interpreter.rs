@@ -102,7 +102,7 @@ impl Tool for InterpretedScriptTool {
 ///
 pub struct ScriptExecutionEnvironment<'a> {
     /// Current values of the variables in this environment
-    variable_values: Vec<Value>,
+    variable_values: Vec<Box<Value>>,
 
     /// The environment where tools are drawn from
     parent_environment: &'a Environment
@@ -147,7 +147,26 @@ impl<'a> ScriptExecutionEnvironment<'a> {
     pub fn allocate_variables(&mut self, num_variables: u32) {
         // Just create any new variables with null values
         while self.variable_values.len() < num_variables as usize {
-            self.variable_values.push(Value::Null);
+            self.variable_values.push(Box::new(Value::Null));
         }
+    }
+
+    ///
+    /// Sets a variable to a value
+    ///
+    #[inline]
+    pub fn set_variable(&mut self, pos: u32, value: Box<Value>) {
+        // Trying to set a variable that has not been allocated is a no-op
+        if (pos as usize) < self.variable_values.len() {
+            self.variable_values[pos as usize] = value;
+        }
+    }
+
+    ///
+    /// Sets a variable to a value
+    ///
+    #[inline]
+    pub fn get_variable(&self, pos: u32) -> &Value {
+        &*self.variable_values[pos as usize]
     }
 }
