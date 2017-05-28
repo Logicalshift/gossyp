@@ -1,3 +1,5 @@
+#![crate_type="dylib"]
+
 extern crate serde_json;
 pub extern crate gossyp_base as _gossyp_base;
 pub extern crate gossyp_toolkit as _gossyp_toolkit;
