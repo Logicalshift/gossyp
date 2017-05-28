@@ -67,6 +67,13 @@ impl ScriptToken {
     }
 
     ///
+    /// Creates a script token that's an identifier
+    ///
+    pub fn identifier(id: &str) -> ScriptToken {
+        ScriptToken { token: ScriptLexerToken::Identifier, start: 0, end: id.len() as i32, matched: String::from(id) }
+    }
+
+    ///
     /// Creates a new script token from a generic `LexerMatch` object
     ///
     pub fn from_lexer_match(lexer_match: &LexerMatch) -> ScriptToken {

@@ -57,7 +57,10 @@ pub enum ScriptEvaluationError {
     ObjectValueNotPresent,
 
     /// In a field access (a.b), the '.b' part must be an identifier
-    FieldMustBeIdentifier
+    FieldMustBeIdentifier,
+
+    /// Tried to declare a new variable with let or var which is already in use
+    VariableNameAlreadyInUse
 }
 
 impl InterpretedScriptTool {
