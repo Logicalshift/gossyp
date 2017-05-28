@@ -133,7 +133,7 @@ impl<'a> ScriptExecutionEnvironment<'a> {
     /// Returns the environment that underlies this object
     ///
     #[inline]
-    pub fn get_environment<'b>(&'b self) -> &'b Environment {
+    pub fn get_environment(&self) -> &'a Environment {
         self.parent_environment
     }
 }
