@@ -12,6 +12,7 @@ use gossyp_base::basic::{make_dynamic_tool};
 use super::script::Script;
 use super::evaluate_statement::evaluate_statement;
 use super::bind_statement::bind_statement;
+use super::binding_environment::BindingEnvironment;
 
 ///
 /// A tool representing a script that will be interepreted
@@ -81,11 +82,12 @@ impl InterpretedScriptTool {
 
 impl Tool for InterpretedScriptTool {
     fn invoke_json(&self, _input: Value, environment: &Environment) -> Result<Value, Value> {
-        // Make the environment that this script will run in
-        let mut script_environment = ScriptExecutionEnvironment::new(environment);
-
         // Bind the values contained within the script
-        let bound_script = bind_statement(&self.statements, &mut script_environment)?;
+        let mut binding_environment = BindingEnvironment::new(environment);
+        let bound_script            = bind_statement(&self.statements, &mut *binding_environment)?;
+
+        // Execute the script
+        let mut script_environment = ScriptExecutionEnvironment::new(environment);
 
         // Evaluate them
         evaluate_statement(&bound_script, &mut script_environment)
@@ -125,5 +127,13 @@ impl<'a> ScriptExecutionEnvironment<'a> {
     #[inline]
     pub fn invoke_tool(&self, tool: &Box<Tool>, input: Value) -> Result<Value, Value> {
         tool.invoke_json(input, self.parent_environment)
+    }
+
+    ///
+    /// Returns the environment that underlies this object
+    ///
+    #[inline]
+    pub fn get_environment<'b>(&'b self) -> &'b Environment {
+        self.parent_environment
     }
 }

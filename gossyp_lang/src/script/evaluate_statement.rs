@@ -4,6 +4,7 @@ use serde_json::*;
 
 use super::bound_script::*;
 use super::evaluate_expression::*;
+use super::binding_environment::*;
 use super::bind_statement::*;
 use super::script::*;
 use super::script_interpreter::*;
@@ -53,7 +54,11 @@ pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecu
 /// Evaluates the result of executing a single statement
 ///
 pub fn evaluate_unbound_statement(statement: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let bound = bind_statement(statement, environment)?;
+    let bound = {
+        let mut binding_environment = BindingEnvironment::new(environment.get_environment());
+        bind_statement(statement, &mut *binding_environment)?
+    };
+
     evaluate_statement(&bound, environment)
 }
 
