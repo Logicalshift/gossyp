@@ -10,11 +10,61 @@ use super::bind_expression::*;
 use super::script_interpreter::*;
 
 ///
+/// Describes a failed bound expression
+///
+#[derive(Clone, Serialize, Deserialize)]
+pub enum FailedBoundExpression {
+    Value(ScriptToken),
+    Array(Vec<FailedBoundExpression>),
+    Tuple(Vec<FailedBoundExpression>),
+    Map(Vec<(FailedBoundExpression, FailedBoundExpression)>),
+    Tool(ScriptToken),
+    Variable(ScriptLexerToken),
+    Field(ScriptToken),
+    Index(Box<(FailedBoundExpression, FailedBoundExpression)>),
+    FieldAccess(Box<(FailedBoundExpression, FailedBoundExpression)>),
+    Apply(Box<(FailedBoundExpression, FailedBoundExpression)>)
+}
+
+///
+/// Generates a failed bound expression from the expression that failed
+///
+pub fn generate_failed_bound_expression(expr: &BoundExpression) -> FailedBoundExpression {
+    use self::FailedBoundExpression::*;
+
+    match expr {
+        &BoundExpression::Value(_, ref token)       => Value(token.clone()),
+        &BoundExpression::Array(ref values)         => Array(values.iter().map(|val| generate_failed_bound_expression(val)).collect()),
+        &BoundExpression::Tuple(ref values)         => Tuple(values.iter().map(|val| generate_failed_bound_expression(val)).collect()),
+        &BoundExpression::Map(ref values)           => Map(values.iter().map(|&(ref key, ref value)| (generate_failed_bound_expression(key), generate_failed_bound_expression(value))).collect()),
+        &BoundExpression::Tool(_, ref token)        => Tool(token.clone()),
+        &BoundExpression::Variable(_, ref token)    => Variable(token.clone()),
+        &BoundExpression::Field(_, ref token)       => Field(token.clone()),
+
+        &BoundExpression::Index(ref boxed)          => {
+            let (ref lhs, ref rhs) = **boxed;
+            Index(Box::new((generate_failed_bound_expression(lhs), generate_failed_bound_expression(rhs))))
+        },
+
+        &BoundExpression::FieldAccess(ref boxed)    => {
+            let (ref lhs, ref rhs) = **boxed;
+            FieldAccess(Box::new((generate_failed_bound_expression(lhs), generate_failed_bound_expression(rhs))))
+        },
+
+        &BoundExpression::Apply(ref boxed)          => {
+            let (ref lhs, ref rhs) = **boxed;
+            Apply(Box::new((generate_failed_bound_expression(lhs), generate_failed_bound_expression(rhs))))
+        }
+    }
+}
+
+///
 /// Creates an execution error relating to an expression
 ///
-fn generate_bound_expression_error(error: ScriptEvaluationError, _expr: &BoundExpression) -> Value {
+fn generate_bound_expression_error(error: ScriptEvaluationError, expr: &BoundExpression) -> Value {
     json![{
-        "error":    error
+        "error":                    error,
+        "failed-bound-expression":  generate_failed_bound_expression(expr)
     }]
 }
 

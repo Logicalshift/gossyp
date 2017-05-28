@@ -10,12 +10,47 @@ use super::script::*;
 use super::script_interpreter::*;
 
 ///
+/// Enumeration representing how a failed bound statement can be described
+///
+#[derive(Deserialize, Serialize, Clone)]
+pub enum FailedBoundStatement {
+    RunCommand(FailedBoundExpression),
+    Sequence(Vec<FailedBoundStatement>),
+    Let(ScriptToken),
+    Var(ScriptToken),
+    Assign(ScriptToken),
+    Loop(Box<FailedBoundStatement>),
+    While(FailedBoundExpression),
+    Using(FailedBoundExpression),
+    Def(ScriptToken)
+}
+
+///
+/// Generates a JS value indicating the statement that failed
+///
+fn generate_failed_bound_statement(script: &BoundScript) -> FailedBoundStatement {
+    use self::FailedBoundStatement::*;
+
+    match script {
+        &BoundScript::RunCommand(ref expr)      => RunCommand(generate_failed_bound_expression(expr)),
+        &BoundScript::Sequence(ref statements)  => Sequence(statements.iter().map(|statement| generate_failed_bound_statement(statement)).collect()),
+        &BoundScript::Assign(_, _, ref token)   => Assign(token.clone()),
+        &BoundScript::Let(_, _, ref token)      => Let(token.clone()),
+        &BoundScript::Var(_, _, ref token)      => Var(token.clone()),
+        &BoundScript::Loop(ref loop_box)        => Loop(Box::new(generate_failed_bound_statement(&**loop_box))),
+        &BoundScript::While(ref expr, _)        => While(generate_failed_bound_expression(expr)),
+        &BoundScript::Using(ref expr, _)        => Using(generate_failed_bound_expression(expr)),
+        &BoundScript::Def(ref token, _, _)      => Def(token.clone()),
+    }
+}
+
+///
 /// Creates an execution error
 ///
 fn generate_script_error(error: ScriptEvaluationError, script: &BoundScript) -> Value {
     json![{
-        "error":                error
-        /* "failed-statement":     script (TODO!) */
+        "error":                    error,
+        "failed-bound-statement":   generate_failed_bound_statement(script)
     }]
 }
 
