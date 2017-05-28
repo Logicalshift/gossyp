@@ -25,7 +25,7 @@ fn bind_sequence(sequence: &Vec<Script>, binding_environment: &mut BindingEnviro
     let mut result = vec![];
 
     for statement in sequence {
-        result.push(bind_statement(statement, binding_environment)?);
+        result.push(bind_statement_without_allocation(statement, binding_environment)?);
     }
 
     Ok(result)
@@ -44,9 +44,9 @@ fn bind_variable_name(name: &ScriptToken, script: &Script, binding_environment: 
 }
 
 ///
-/// Binds a statement to an environment
+/// Binds a statement to an environment (does not allocate space for variables)
 ///
-pub fn bind_statement(script: &Script, binding_environment: &mut BindingEnvironment) -> Result<BoundScript, Value> {
+fn bind_statement_without_allocation(script: &Script, binding_environment: &mut BindingEnvironment) -> Result<BoundScript, Value> {
     use self::BoundScript::*;
 
     match *script {
@@ -55,6 +55,27 @@ pub fn bind_statement(script: &Script, binding_environment: &mut BindingEnvironm
         Script::Var(ref name, ref expr) => Ok(Var(bind_variable_name(name, script, binding_environment)?, bind_expression(expr, binding_environment)?, name.clone())),
 
         _ => unimplemented!()
+    }
+}
+
+///
+/// Binds a statement to an environment
+///
+pub fn bind_statement(script: &Script, binding_environment: &mut BindingEnvironment) -> Result<BoundScript, Value> {
+    use self::BoundScript::*;
+
+    // We store the initial number of variables so we can see if any allocation is required
+    let initial_variable_count  = binding_environment.get_number_of_variables();
+
+    // Then bind the statements with no further allocation
+    let bound_script            = bind_statement_without_allocation(script, binding_environment)?;
+
+    // Transform to an allocation script if required
+    let final_variable_count = binding_environment.get_number_of_variables();
+    if initial_variable_count < final_variable_count {
+        Ok(AllocateVariables(final_variable_count, Box::new(bound_script)))
+    } else {
+        Ok(bound_script)
     }
 }
 
@@ -93,6 +114,12 @@ mod test {
 
         let bound               = bind_statement(&var_statement, &mut *env);
 
-        assert!(match bound { Ok(BoundScript::Var(0, BoundExpression::Value(_, _), _)) => true, _ => false });
+        assert!(match bound { Ok(BoundScript::AllocateVariables(1, _)) => true, _ => false });
+
+        if let Ok(BoundScript::AllocateVariables(_, boundvar)) = bound {
+            assert!(match *boundvar { BoundScript::Var(0, BoundExpression::Value(_, _), _) => true, _ => false });
+        } else {
+            assert!(false);
+        }
     }
 }
