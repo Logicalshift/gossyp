@@ -6,8 +6,8 @@
 use std::result::Result;
 use serde_json::*;
 
-use gossyp_base::*;
-use gossyp_base::basic::*;
+use gossyp_base::{Tool, Environment, RetrieveToolError};
+use gossyp_base::basic::{make_dynamic_tool};
 
 use super::script::Script;
 use super::evaluate_statement::evaluate_statement;
