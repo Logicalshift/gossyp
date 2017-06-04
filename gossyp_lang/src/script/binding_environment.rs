@@ -45,7 +45,7 @@ pub struct VariableBindingEnvironment {
 /// An external environment binding environment can be used to look up tools found
 /// in an Environment object
 ///
-struct ExternalEnvironmentBindingEnvironment<'a> {
+struct ToolBindingEnvironment<'a> {
     /// Where to look up variables
     variable_environment: VariableBindingEnvironment,
 
@@ -118,12 +118,12 @@ impl BindingEnvironment {
             bindings:           HashMap::new() 
         };
 
-        let external_environment = ExternalEnvironmentBindingEnvironment { 
+        let tool_environment = ToolBindingEnvironment { 
             variable_environment:   variable_environment,
             environment:            environment 
         };
 
-        Box::new(external_environment)
+        Box::new(tool_environment)
     }
 
     ///
@@ -195,7 +195,7 @@ impl BindingEnvironment for VariableBindingEnvironment {
     }
 }
 
-impl<'a> BindingEnvironment for ExternalEnvironmentBindingEnvironment<'a> {
+impl<'a> BindingEnvironment for ToolBindingEnvironment<'a> {
     fn allocate_location(&mut self) -> u32 {
         self.variable_environment.allocate_location()
     }
