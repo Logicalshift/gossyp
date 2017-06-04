@@ -211,4 +211,22 @@ mod test {
 
         assert!(result == Ok(5));
     }
+
+    #[test]
+    fn can_call_dynamic_tool() {
+        let tool            = make_dynamic_tool(|x: i32, _env: &Environment| -> Result<i32, Value> { Ok(x+1) });
+        let environment     = EmptyEnvironment::new();
+
+        let should_be_error = tool.invoke_json(json![ 1 ], &environment);
+        assert!(should_be_error == Ok(json![2]));
+    }
+
+    #[test]
+    fn dynamic_tool_can_produce_error() {
+        let tool            = make_dynamic_tool(|_: i32, _env: &Environment| -> Result<i32, Value> { Err(json![ "Oops" ]) });
+        let environment     = EmptyEnvironment::new();
+
+        let should_be_error = tool.invoke_json(json![ 1 ], &environment);
+        assert!(should_be_error == Err(json!["Oops"]));
+    }
 }
