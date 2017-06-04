@@ -1,8 +1,9 @@
 use std::sync::{Mutex, Arc};
 use std::result::Result;
 
-use serde_json::Value;
-use gossyp_base::environment::Environment;
+use serde::*;
+use serde_json::*;
+use gossyp_base::*;
 
 use super::binding_environment::*;
 use super::script_interpreter::*;
@@ -57,11 +58,16 @@ impl StatefulEvalTool {
     }
 }
 
+impl Tool for StatefulEvalTool {
+    fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
+        let script = from_value::<Script>(input);
+        self.evaluate_unbound_statement(script, environment)
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use gossyp_base::basic::*;
     use super::*;
-    use serde_json::*;
 
     #[test]
     fn can_bind_variable_using_stateful_tool() {
