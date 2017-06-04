@@ -10,6 +10,7 @@ use serde_json::*;
 use super::super::tool::*;
 use super::super::environment::*;
 use super::toolset::*;
+use super::basic_toolset::*;
 
 ///
 /// A static environment just contains a fixed set of tools
@@ -62,6 +63,17 @@ impl StaticEnvironment {
         }
 
         StaticEnvironment { tools: tool_hash }
+    }
+
+    ///
+    /// Creates a new static environment containing a single tool
+    ///
+    pub fn from_tool<T: Tool+'static>(tool_name: &str, tool: T, environment: &Environment) -> StaticEnvironment {
+        // Create a toolset containing this tool
+        let single_toolset = BasicToolSet::from(vec![ (String::from(tool_name), tool) ]);
+
+        // Pass through to from_toolset
+        StaticEnvironment::from_toolset(single_toolset, environment)
     }
 }
 
