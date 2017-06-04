@@ -61,7 +61,8 @@ impl StatefulEvalTool {
 
 impl Tool for StatefulEvalTool {
     fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
-        let script = from_value::<Script>(input);
+        let script = from_value::<Vec<Script>>(input)
+            .map(|statements| Script::Sequence(statements));
 
         match script {
             Ok(script)          => self.evaluate_unbound_statement(&script, environment),
