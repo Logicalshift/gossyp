@@ -1,6 +1,7 @@
 use std::result::Result;
 
 use serde_json::*;
+use gossyp_base::environment::Environment;
 
 use super::bound_script::*;
 use super::evaluate_expression::*;
@@ -58,12 +59,12 @@ fn generate_script_error(error: ScriptEvaluationError, script: &BoundScript) -> 
 ///
 /// Evaluates the result of executing a sequence of steps
 ///
-pub fn evaluate_sequence(sequence: &Vec<BoundScript>, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_sequence(sequence: &Vec<BoundScript>, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     // Execute the script
     let mut result = vec![];
     for statement in sequence.iter() {
         // Evaluate the next statement
-        let next_result = evaluate_statement(statement, environment)?;
+        let next_result = evaluate_statement(statement, environment, execution_environment)?;
 
         // The script result is built up from the result of each statement
         // TODO: unless there's something like a return statement?
@@ -77,17 +78,17 @@ pub fn evaluate_sequence(sequence: &Vec<BoundScript>, environment: &mut ScriptEx
 ///
 /// Allocates variables before continuing
 ///
-fn evaluate_allocate_variables(num_variables: u32, continuation: &BoundScript, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    environment.allocate_variables(num_variables);
-    evaluate_statement(continuation, environment)
+fn evaluate_allocate_variables(num_variables: u32, continuation: &BoundScript, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    execution_environment.allocate_variables(num_variables);
+    evaluate_statement(continuation, environment, execution_environment)
 }
 
 ///
 /// Assigns a value to a particular variable
 ///
-fn evaluate_assignment(variable_index: u32, expr: &BoundExpression, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let expression_value = evaluate_expression(expr, environment)?;
-    environment.set_variable(variable_index, Box::new(expression_value.clone()));
+fn evaluate_assignment(variable_index: u32, expr: &BoundExpression, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let expression_value = evaluate_expression(expr, environment, execution_environment)?;
+    execution_environment.set_variable(variable_index, Box::new(expression_value.clone()));
 
     Ok(expression_value)
 }
@@ -95,13 +96,13 @@ fn evaluate_assignment(variable_index: u32, expr: &BoundExpression, environment:
 ///
 /// Evaluates the result of executing a single statement
 ///
-pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_statement(statement: &BoundScript, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
     match statement {
-        &BoundScript::AllocateVariables(num, ref continuation)  => evaluate_allocate_variables(num, &**continuation, environment),
-        &BoundScript::RunCommand(ref expr)                      => evaluate_expression(expr, environment),
-        &BoundScript::Sequence(ref steps)                       => evaluate_sequence(steps, environment),
-        &BoundScript::Var(index, ref expr, _)                   => evaluate_assignment(index, expr, environment),
-        &BoundScript::Assign(index, ref expr, _)                => evaluate_assignment(index, expr, environment),
+        &BoundScript::AllocateVariables(num, ref continuation)  => evaluate_allocate_variables(num, &**continuation, environment, execution_environment),
+        &BoundScript::RunCommand(ref expr)                      => evaluate_expression(expr, environment, execution_environment),
+        &BoundScript::Sequence(ref steps)                       => evaluate_sequence(steps, environment, execution_environment),
+        &BoundScript::Var(index, ref expr, _)                   => evaluate_assignment(index, expr, environment, execution_environment),
+        &BoundScript::Assign(index, ref expr, _)                => evaluate_assignment(index, expr, environment, execution_environment),
 
         _                                                       => Err(generate_script_error(ScriptEvaluationError::StatementNotImplemented, statement))
     }
@@ -110,11 +111,11 @@ pub fn evaluate_statement(statement: &BoundScript, environment: &mut ScriptExecu
 ///
 /// Evaluates the result of executing a single statement
 ///
-pub fn evaluate_unbound_statement(statement: &Script, environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let mut binding_environment = BindingEnvironment::new(environment.get_environment());
+pub fn evaluate_unbound_statement(statement: &Script, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let mut binding_environment = BindingEnvironment::new(environment);
     let bound                   = bind_statement(statement, &mut *binding_environment)?;
 
-    evaluate_statement(&bound, environment)
+    evaluate_statement(&bound, environment, execution_environment)
 }
 
 #[cfg(test)]

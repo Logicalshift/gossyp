@@ -2,6 +2,7 @@ use std::sync::{Mutex, Arc};
 use std::result::Result;
 
 use serde_json::Value;
+use gossyp_base::environment::Environment;
 
 use super::binding_environment::*;
 use super::script_interpreter::*;
@@ -14,17 +15,17 @@ use super::bound_script::*;
 /// Represents a tool that can be used to evaluate scripts and maintains
 /// state (useful for evaluation in a REPL environment)
 ///
-pub struct StatefulEvalTool<'a> {
+pub struct StatefulEvalTool {
     binding:    Arc<Mutex<BindingEnvironment>>,
-    execution:  Arc<Mutex<ScriptExecutionEnvironment<'a>>>
+    execution:  Arc<Mutex<ScriptExecutionEnvironment>>
 }
 
-impl<'a> StatefulEvalTool<'a> {
+impl StatefulEvalTool {
     ///
     /// Evaluates an unbound statement using this tool
     ///
-    pub fn evaluate_unbound_statement(&self, script: &Script) -> Result<Value, Value> {
-        self.evaluate_statement(self.bind_statement(script)?)
+    pub fn evaluate_unbound_statement(&self, script: &Script, environment: &Environment) -> Result<Value, Value> {
+        self.evaluate_statement(&self.bind_statement(script)?, environment)
     }
 
     ///
@@ -37,7 +38,7 @@ impl<'a> StatefulEvalTool<'a> {
     ///
     /// Evaluates a statement in the environment represented by this tool
     ///
-    pub fn evaluate_statement(&self, script: &BoundScript) -> Result<Value, Value> {
-        evaluate_statement(script, &mut *self.execution.lock().unwrap())
+    pub fn evaluate_statement(&self, script: &BoundScript, environment: &Environment) -> Result<Value, Value> {
+        evaluate_statement(script, environment, &mut *self.execution.lock().unwrap())
     }
 }

@@ -81,15 +81,15 @@ pub fn evaluate_expression_to_tool<'a>(expression: &'a BoundExpression) -> Resul
 ///
 /// Calls an expression representing a tool and calls it with the specified parameters
 ///
-pub fn call_tool(tool: &Box<Tool>, parameters: Value, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
-    environment.invoke_tool(tool, parameters)
+pub fn call_tool(tool: &Box<Tool>, parameters: Value, environment: &Environment) -> Result<Value, Value> {
+    tool.invoke_json(parameters, environment)
 }
 
 ///
 /// Evaluates an 'apply' expression
 ///
-pub fn apply(&(ref tool, ref parameters): &(BoundExpression, BoundExpression), environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let parameters_value    = evaluate_expression(parameters, environment)?;
+pub fn apply(&(ref tool, ref parameters): &(BoundExpression, BoundExpression), environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let parameters_value    = evaluate_expression(parameters, environment, execution_environment)?;
     let applies_to          = evaluate_expression_to_tool(tool)?;
 
     call_tool(applies_to, parameters_value, environment)
@@ -98,11 +98,11 @@ pub fn apply(&(ref tool, ref parameters): &(BoundExpression, BoundExpression), e
 ///
 /// Evaluates a series of expressions into an array
 ///
-pub fn evaluate_array(exprs: &Vec<BoundExpression>, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_array(exprs: &Vec<BoundExpression>, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
     let mut result = vec![];
 
     for expr in exprs.iter() {
-        result.push(evaluate_expression(expr, environment)?)
+        result.push(evaluate_expression(expr, environment, execution_environment)?)
     }
 
     Ok(Value::Array(result))
@@ -111,17 +111,17 @@ pub fn evaluate_array(exprs: &Vec<BoundExpression>, environment: &ScriptExecutio
 ///
 /// Evaluates a series of expressions into an array
 ///
-pub fn evaluate_map(exprs: &Vec<(BoundExpression, BoundExpression)>, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_map(exprs: &Vec<(BoundExpression, BoundExpression)>, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
     let mut result = Map::new();
 
     for &(ref key_expr, ref value_expr) in exprs.iter() {
-        let key = match evaluate_expression(key_expr, environment) {
+        let key = match evaluate_expression(key_expr, environment, execution_environment) {
             Ok(Value::String(key))  => key,
             Ok(_)                   => return Err(generate_bound_expression_error(ScriptEvaluationError::MapKeysMustEvaluateToAString, key_expr)),
             Err(erm)                => return Err(erm)
         };
 
-        let value = evaluate_expression(value_expr, environment)?;
+        let value = evaluate_expression(value_expr, environment, execution_environment)?;
 
         result.insert(key, value);
     }
@@ -132,10 +132,10 @@ pub fn evaluate_map(exprs: &Vec<(BoundExpression, BoundExpression)>, environment
 ///
 /// Evaluates an index expression
 ///
-pub fn evaluate_index(lhs: &BoundExpression, rhs: &BoundExpression, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_index(lhs: &BoundExpression, rhs: &BoundExpression, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
     // Evaluate the left-hand and right-hand sides of the expression
-    evaluate_expression(lhs, environment)
-        .and_then(|lhs_res| evaluate_expression(rhs, environment).map(|rhs_res| (lhs_res, rhs_res)))
+    evaluate_expression(lhs, environment, execution_environment)
+        .and_then(|lhs_res| evaluate_expression(rhs, environment, execution_environment).map(|rhs_res| (lhs_res, rhs_res)))
         .and_then(|(lhs_res, rhs_res)| {
             match lhs_res {
                 Value::Array(ref array) => {
@@ -187,24 +187,24 @@ pub fn evaluate_index(lhs: &BoundExpression, rhs: &BoundExpression, environment:
 ///
 /// Evaluates a single expression
 ///
-pub fn evaluate_expression(expression: &BoundExpression, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+pub fn evaluate_expression(expression: &BoundExpression, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
     match expression {
         &BoundExpression::Value(ref value, ref _token)          => Ok(value.clone()),
 
         &BoundExpression::Tool(ref tool, ref _token)            => call_tool(tool, Value::Null, environment),
-        &BoundExpression::Variable(var_num, ref _token)         => Ok(environment.get_variable(var_num).clone()),
+        &BoundExpression::Variable(var_num, ref _token)         => Ok(execution_environment.get_variable(var_num).clone()),
         &BoundExpression::Field(ref _field_name, ref _token)    => unimplemented!(),
         
-        &BoundExpression::Array(ref values)                     => evaluate_array(values, environment),
-        &BoundExpression::Tuple(ref values)                     => evaluate_array(values, environment),
-        &BoundExpression::Map(ref values)                       => evaluate_map(values, environment),
+        &BoundExpression::Array(ref values)                     => evaluate_array(values, environment, execution_environment),
+        &BoundExpression::Tuple(ref values)                     => evaluate_array(values, environment, execution_environment),
+        &BoundExpression::Map(ref values)                       => evaluate_map(values, environment, execution_environment),
 
         &BoundExpression::FieldAccess(ref _accessor)            => unimplemented!(),
-        &BoundExpression::Apply(ref application)                => apply(&*application, environment),
+        &BoundExpression::Apply(ref application)                => apply(&*application, environment, execution_environment),
 
         &BoundExpression::Index(ref index)                      => {
             let (ref lhs, ref rhs) = **index;
-            evaluate_index(lhs, rhs, environment)
+            evaluate_index(lhs, rhs, environment, execution_environment)
         },
     }
 }
@@ -212,11 +212,11 @@ pub fn evaluate_expression(expression: &BoundExpression, environment: &ScriptExe
 ///
 /// Evaluates a single expression
 ///
-pub fn evaluate_unbound_expression(expression: &Expression, environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let mut binding_environment = BindingEnvironment::new(environment.get_environment());
+pub fn evaluate_unbound_expression(expression: &Expression, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
+    let mut binding_environment = BindingEnvironment::new(environment);
     let bound                   = bind_expression(expression, &mut *binding_environment)?;
 
-    evaluate_expression(&bound, environment)
+    evaluate_expression(&bound, environment, execution_environment)
 }
 
 #[cfg(test)]

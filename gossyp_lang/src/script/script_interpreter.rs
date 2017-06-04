@@ -6,7 +6,7 @@
 use std::result::Result;
 use serde_json::*;
 
-use gossyp_base::{Tool, Environment, RetrieveToolError};
+use gossyp_base::{Tool, Environment};
 use gossyp_base::basic::{make_dynamic_tool};
 
 use super::script::Script;
@@ -90,54 +90,27 @@ impl Tool for InterpretedScriptTool {
         let bound_script            = bind_statement(&self.statements, &mut *binding_environment)?;
 
         // Execute the script
-        let mut script_environment = ScriptExecutionEnvironment::new(environment);
+        let mut script_environment = ScriptExecutionEnvironment::new();
 
         // Evaluate them
-        evaluate_statement(&bound_script, &mut script_environment)
+        evaluate_statement(&bound_script, environment, &mut script_environment)
     }
 }
 
 ///
 /// Represents an execution environment for a running script
 ///
-pub struct ScriptExecutionEnvironment<'a> {
+pub struct ScriptExecutionEnvironment {
     /// Current values of the variables in this environment
     variable_values: Vec<Box<Value>>,
-
-    /// The environment where tools are drawn from
-    parent_environment: &'a Environment
 }
 
-impl<'a> ScriptExecutionEnvironment<'a> {
+impl ScriptExecutionEnvironment {
     ///
     /// Creates a new script execution environment
     ///
-    pub fn new(parent_environment: &'a Environment) -> ScriptExecutionEnvironment<'a> {
-        ScriptExecutionEnvironment { variable_values: vec![], parent_environment: parent_environment }
-    }
-
-    ///
-    /// Fetches a tool from this environment
-    ///
-    #[inline]
-    pub fn get_json_tool(&self, tool: &str) -> Result<Box<Tool>, RetrieveToolError> {
-        self.parent_environment.get_json_tool(tool)
-    }
-
-    ///
-    /// Invokes a JSON tool in this environment
-    ///
-    #[inline]
-    pub fn invoke_tool(&self, tool: &Box<Tool>, input: Value) -> Result<Value, Value> {
-        tool.invoke_json(input, self.parent_environment)
-    }
-
-    ///
-    /// Returns the environment that underlies this object
-    ///
-    #[inline]
-    pub fn get_environment(&self) -> &'a Environment {
-        self.parent_environment
+    pub fn new() -> ScriptExecutionEnvironment {
+        ScriptExecutionEnvironment { variable_values: vec![] }
     }
 
     ///
