@@ -3,6 +3,7 @@ pub mod parse_script_tool;
 pub mod script;
 pub mod bound_script;
 pub mod script_interpreter;
+pub mod stateful_eval;
 pub mod binding_environment;
 pub mod bind_expression;
 pub mod bind_statement;
@@ -22,7 +23,7 @@ use gossyp_base::basic::*;
 pub struct ScriptTools {
 }
 
-impl ToolSet for ScriptTools{
+impl ToolSet for ScriptTools {
     fn create_tools(self, _: &Environment) -> Vec<(String, Box<Tool>)> {
         vec![
             (String::from(tool::LEX_SCRIPT),    Box::new(create_lex_script_tool())),
