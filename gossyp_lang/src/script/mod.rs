@@ -14,6 +14,7 @@ pub mod tool;
 use self::lex_script_tool::*;
 use self::parse_script_tool::*;
 use self::script_interpreter::*;
+use self::stateful_eval::*;
 use gossyp_base::*;
 use gossyp_base::basic::*;
 
@@ -26,9 +27,10 @@ pub struct ScriptTools {
 impl ToolSet for ScriptTools {
     fn create_tools(self, _: &Environment) -> Vec<(String, Box<Tool>)> {
         vec![
-            (String::from(tool::LEX_SCRIPT),    Box::new(create_lex_script_tool())),
-            (String::from(tool::PARSE_SCRIPT),  ParseScriptTool::new_tool()),
-            (String::from(tool::EVAL_SCRIPT),   InterpretedScriptTool::new_script_eval_tool())
+            (String::from(tool::LEX_SCRIPT),                    Box::new(create_lex_script_tool())),
+            (String::from(tool::PARSE_SCRIPT),                  ParseScriptTool::new_tool()),
+            (String::from(tool::EVAL_SCRIPT),                   InterpretedScriptTool::new_script_eval_tool()),
+            (String::from(tool::CREATE_EVALUATOR_WITH_STATE),   Box::new(make_dynamic_tool(create_evaluator_with_state_tool)))
         ]
     }
 }

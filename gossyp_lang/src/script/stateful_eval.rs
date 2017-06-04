@@ -4,6 +4,7 @@ use std::error::Error;
 
 use serde_json::*;
 use gossyp_base::*;
+use gossyp_base::basic::*;
 
 use super::binding_environment::*;
 use super::script_interpreter::*;
@@ -70,6 +71,27 @@ impl Tool for StatefulEvalTool {
             }])
         }
     }
+}
+
+///
+/// Tool function that creates an eval state in an environment
+///
+pub fn create_evaluator_with_state_tool(eval_name: String, environment: &Environment) -> Result<(), Value> {
+    // Fetch the tool defining tool
+    let define_tool = environment.get_json_tool(tool_name::DEFINE_TOOL)
+        .map(|tool| TypedTool::from(tool))
+        .map_err(|retrieve_error| json![{
+            "error":        "Cannot define tool",
+            "description":  retrieve_error.message()
+        }])?;
+
+    // Define an environment containing the stateful tool
+    let stateful_env = StaticEnvironment::from_tool("stateful-eval", StatefulEvalTool::new(), &EmptyEnvironment::new());
+
+    // Copy the stateful eval tool to the new environment
+    let _define_result: () = define_tool.invoke(DefineToolInput::new(&eval_name, Some("stateful-eval")), &stateful_env)?;
+
+    Ok(())
 }
 
 #[cfg(test)]
