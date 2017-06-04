@@ -130,8 +130,8 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
-        let result              = evaluate_unbound_statement(&tool_expr, &mut env);
+        let mut env             = ScriptExecutionEnvironment::new();
+        let result              = evaluate_unbound_statement(&tool_expr, &tool_environment, &mut env);
 
         assert!(result == Ok(Value::String(String::from("Success"))));
     }
@@ -145,8 +145,8 @@ mod test {
             ]);
         let tool_environment    = DynamicEnvironment::new();
 
-        let mut env             = ScriptExecutionEnvironment::new(&tool_environment);
-        let result              = evaluate_unbound_statement(&tool_expr, &mut env);
+        let mut env             = ScriptExecutionEnvironment::new();
+        let result              = evaluate_unbound_statement(&tool_expr, &tool_environment, &mut env);
 
         assert!(result == Ok(Value::Array(vec![
             Value::String(String::from("test 1")),
