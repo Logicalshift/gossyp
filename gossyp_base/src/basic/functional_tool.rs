@@ -68,7 +68,7 @@ where for<'de> TIn: Deserialize<'de>, TOut: Serialize, TErr: Serialize {
                     Err(erm) => {
                         let encoded = to_value(erm);
                         match encoded {
-                            Ok(final_value) => Ok(final_value),
+                            Ok(final_value) => Err(final_value),
                             Err(erm)        => Err(json![{
                                 "error":        "Error encode failed",
                                 "description":  erm.description()
