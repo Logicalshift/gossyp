@@ -86,7 +86,7 @@ impl InterpretedScriptTool {
 impl Tool for InterpretedScriptTool {
     fn invoke_json(&self, _input: Value, environment: &Environment) -> Result<Value, Value> {
         // Bind the values contained within the script
-        let mut binding_environment = BindingEnvironment::new(environment);
+        let mut binding_environment = BindingEnvironment::from_environment(environment);
         let bound_script            = bind_statement(&self.statements, &mut *binding_environment)?;
 
         // Execute the script

@@ -191,7 +191,7 @@ mod test {
     fn can_bind_string() {
         let string_expr         = Expression::string("\"Foo\"");
         let empty_environment   = EmptyEnvironment::new();
-        let mut env             = BindingEnvironment::new(&empty_environment);
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(match bind_expression(&string_expr, &mut *env) { Ok(BoundExpression::Value(Value::String(s), _)) => s == "Foo", _ => false }); 
     }
@@ -200,7 +200,7 @@ mod test {
     fn can_bind_number() {
         let string_expr         = Expression::number("42");
         let empty_environment   = EmptyEnvironment::new();
-        let mut env             = BindingEnvironment::new(&empty_environment);
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(match bind_expression(&string_expr, &mut *env) { Ok(BoundExpression::Value(num, _)) => num == json![ 42 ], _ => false }); 
     }
@@ -212,7 +212,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&tool_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Tool(_, _)) => true, _ => false });
@@ -225,7 +225,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&array_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Array(_)) => true, _ => false });
@@ -242,7 +242,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&tuple_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Tuple(_)) => true, _ => false });
@@ -259,7 +259,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&map_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Map(_)) => true, _ => false });
@@ -275,7 +275,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&apply_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Apply(_)) => true, _ => false });
@@ -288,7 +288,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&index_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::Index(_)) => true, _ => false });
@@ -309,7 +309,7 @@ mod test {
 
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut env             = BindingEnvironment::new(&tool_environment);
+        let mut env             = BindingEnvironment::from_environment(&tool_environment);
         let result              = bind_expression(&field_access_expr, &mut *env);
 
         assert!(match result { Ok(BoundExpression::FieldAccess(_)) => true, _ => false });

@@ -15,12 +15,20 @@ use super::bound_script::*;
 /// Represents a tool that can be used to evaluate scripts and maintains
 /// state (useful for evaluation in a REPL environment)
 ///
+#[derive(Clone)]
 pub struct StatefulEvalTool {
-    binding:    Arc<Mutex<BindingEnvironment>>,
+    binding:    Arc<Mutex<Box<BindingEnvironment>>>,
     execution:  Arc<Mutex<ScriptExecutionEnvironment>>
 }
 
 impl StatefulEvalTool {
+    pub fn new() -> StatefulEvalTool {
+        StatefulEvalTool {
+            binding: Arc::new(Mutex::new(BindingEnvironment::new())),
+            execution: Arc::new(Mutex::new(ScriptExecutionEnvironment::new()))
+        }
+    }
+
     ///
     /// Evaluates an unbound statement using this tool
     ///
@@ -32,7 +40,7 @@ impl StatefulEvalTool {
     /// Binds a statement to this tool
     ///
     pub fn bind_statement(&self, script: &Script) -> Result<BoundScript, Value> {
-        bind_statement(script, &mut *self.binding.lock().unwrap())
+        bind_statement(script, &mut **self.binding.lock().unwrap())
     }
 
     ///

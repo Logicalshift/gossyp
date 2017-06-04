@@ -112,7 +112,7 @@ pub fn evaluate_statement(statement: &BoundScript, environment: &Environment, ex
 /// Evaluates the result of executing a single statement
 ///
 pub fn evaluate_unbound_statement(statement: &Script, environment: &Environment, execution_environment: &mut ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let mut binding_environment = BindingEnvironment::new(environment);
+    let mut binding_environment = BindingEnvironment::from_environment(environment);
     let bound                   = bind_statement(statement, &mut *binding_environment)?;
 
     evaluate_statement(&bound, environment, execution_environment)

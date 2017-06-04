@@ -88,7 +88,7 @@ mod test {
     fn can_bind_simple_statement() {
         let string_statement    = Script::RunCommand(Expression::string("\"Foo\""));
         let empty_environment   = EmptyEnvironment::new();
-        let mut env             = BindingEnvironment::new(&empty_environment);
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
 
         let bound               = bind_statement(&string_statement, &mut *env);
 
@@ -99,7 +99,7 @@ mod test {
     fn can_bind_simple_sequence() {
         let sequence_statement  = Script::Sequence(vec![Script::RunCommand(Expression::string("\"Foo\""))]);
         let empty_environment   = EmptyEnvironment::new();
-        let mut env             = BindingEnvironment::new(&empty_environment);
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
 
         let bound               = bind_statement(&sequence_statement, &mut *env);
 
@@ -110,7 +110,7 @@ mod test {
     fn can_bind_var_expression() {
         let var_statement       = Script::Var(ScriptToken::identifier("test"), Expression::number("42"));
         let empty_environment   = EmptyEnvironment::new();
-        let mut env             = BindingEnvironment::new(&empty_environment);
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
 
         let bound               = bind_statement(&var_statement, &mut *env);
 

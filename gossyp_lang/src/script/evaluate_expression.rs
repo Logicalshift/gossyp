@@ -213,7 +213,7 @@ pub fn evaluate_expression(expression: &BoundExpression, environment: &Environme
 /// Evaluates a single expression
 ///
 pub fn evaluate_unbound_expression(expression: &Expression, environment: &Environment, execution_environment: &ScriptExecutionEnvironment) -> Result<Value, Value> {
-    let mut binding_environment = BindingEnvironment::new(environment);
+    let mut binding_environment = BindingEnvironment::from_environment(environment);
     let bound                   = bind_expression(expression, &mut *binding_environment)?;
 
     evaluate_expression(&bound, environment, execution_environment)

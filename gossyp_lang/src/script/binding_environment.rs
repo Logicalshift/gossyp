@@ -1,5 +1,6 @@
 use std::result::Result;
 use std::collections::HashMap;
+use std::cmp;
 
 use gossyp_base::RetrieveToolError;
 use gossyp_base::Environment;
@@ -34,7 +35,7 @@ pub enum BindingResult {
 ///
 struct BaseBindingEnvironment<'a> {
     /// The external environment that contains tools we can bind to
-    environment: &'a Environment,
+    environment: Option<&'a Environment>,
 
     /// The next variable value that will be alllocated
     next_to_allocate: u32,
@@ -92,12 +93,33 @@ impl BindingEnvironment {
     ///
     /// Creates a new binding environment. New variables will be mapped from 0
     ///
-    pub fn new<'a>(environment: &'a Environment) -> Box<BindingEnvironment+'a> {
+    pub fn new() -> Box<BindingEnvironment> {
         Box::new(BaseBindingEnvironment { 
-            environment:        environment, 
+            environment:        None, 
             next_to_allocate:   0, 
             bindings:           HashMap::new() 
         })
+    }
+
+    ///
+    /// Creates a new binding environment which will fetch tools from an outside environment
+    ///
+    pub fn from_environment<'a>(environment: &'a Environment) -> Box<BindingEnvironment+'a> {
+        Box::new(BaseBindingEnvironment { 
+            environment:        Some(environment), 
+            next_to_allocate:   0, 
+            bindings:           HashMap::new() 
+        })
+    }
+
+    ///
+    /// Combines two binding environments into a single environment
+    ///
+    /// Items not found in the primary environment will be returned in the secondary 
+    /// one. New variables will be allocated in the secondary environment.
+    ///
+    pub fn combine<'a>(primary_environment: &'a mut BindingEnvironment, secondary_environment: &'a BindingEnvironment) -> Box<BindingEnvironment+'a> {
+        Box::new((primary_environment, secondary_environment))
     }
 }
 
@@ -148,7 +170,9 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
             BindingResult::Variable(*variable)
         } else {
             // Try to retrieve from the environment
-            let tool_or_error = self.environment.get_json_tool(name);
+            let tool_or_error = self.environment
+                .map(|environment| environment.get_json_tool(name))
+                .unwrap_or(Err(RetrieveToolError::not_found()));
 
             match tool_or_error {
                 Ok(tool)    => BindingResult::Tool(tool),
@@ -203,6 +227,42 @@ impl<'a> BindingEnvironment for ChildBindingEnvironment<'a> {
     }
 }
 
+impl<'a> BindingEnvironment for (&'a mut BindingEnvironment, &'a BindingEnvironment) {
+    fn allocate_location(&mut self) -> u32 {
+        let (ref mut primary, _) = *self;
+
+        primary.allocate_location()
+    }
+
+    fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
+        let (ref mut primary, _) = *self;
+
+        primary.allocate_variable(name)
+    }
+
+    fn lookup(&self, name: &str) -> BindingResult {
+        let (ref primary, ref secondary) = *self;
+
+        match primary.lookup(name) {
+            BindingResult::Error(_) => secondary.lookup(name),
+            found                   => found
+        }
+    }
+
+    fn get_number_of_variables(&self) -> u32 {
+        let (ref primary, ref secondary) = *self;
+
+        cmp::max(primary.get_number_of_variables(), secondary.get_number_of_variables())
+    }
+
+    fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
+        Box::new(ChildBindingEnvironment {
+            base_environment:   self,
+            bindings:           HashMap::new()
+        })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use gossyp_base::basic::*;
@@ -211,7 +271,7 @@ mod test {
     #[test]
     fn can_allocate_location() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(binding.allocate_location() == 0);
     }
@@ -219,7 +279,7 @@ mod test {
     #[test]
     fn can_allocate_many_locations() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(binding.allocate_location() == 0);
         assert!(binding.allocate_location() == 1);
@@ -229,7 +289,7 @@ mod test {
     #[test]
     fn can_get_number_of_variables() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         binding.allocate_location();
         binding.allocate_location();
@@ -245,7 +305,7 @@ mod test {
     #[test]
     fn allocating_locations_in_child_environments_also_does_in_parent() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(binding.allocate_location() == 0);
 
@@ -261,7 +321,7 @@ mod test {
     #[test]
     fn can_reallocate_variable_name_in_child_environment() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         binding.allocate_variable("test");
         assert!(match binding.lookup("test") { BindingResult::Variable(0) => true, _ => false });
@@ -277,7 +337,7 @@ mod test {
     #[test]
     fn child_environment_lookup_falls_through_to_parent() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         binding.allocate_variable("test1");
         binding.allocate_variable("test2");
@@ -299,7 +359,7 @@ mod test {
     #[test]
     fn can_allocate_variable_name() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(binding.allocate_variable("test") == Ok(0));
     }
@@ -307,7 +367,7 @@ mod test {
     #[test]
     fn cannot_allocate_variable_name_twice() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         assert!(binding.allocate_variable("test") == Ok(0));
         assert!(binding.allocate_variable("test") == Err(BindingError::AlreadyInUse));
@@ -316,7 +376,7 @@ mod test {
     #[test]
     fn can_lookup_variable_name() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         binding.allocate_variable("test");
         
@@ -326,7 +386,7 @@ mod test {
     #[test]
     fn can_lookup_many_variable_names() {
         let empty_environment   = EmptyEnvironment::new();
-        let mut binding         = BindingEnvironment::new(&empty_environment);
+        let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
         binding.allocate_variable("test1");
         binding.allocate_variable("test2");
@@ -342,7 +402,7 @@ mod test {
         let tool_environment = DynamicEnvironment::new();
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut binding = BindingEnvironment::new(&tool_environment);
+        let mut binding = BindingEnvironment::from_environment(&tool_environment);
         
         assert!(match binding.lookup("test") { BindingResult::Tool(_) => true, _ => false });
     }
@@ -352,7 +412,7 @@ mod test {
         let tool_environment = DynamicEnvironment::new();
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut binding = BindingEnvironment::new(&tool_environment);
+        let mut binding = BindingEnvironment::from_environment(&tool_environment);
 
         binding.allocate_variable("test");
         
