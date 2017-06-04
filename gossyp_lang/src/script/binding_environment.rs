@@ -9,7 +9,7 @@ use gossyp_base::Tool;
 ///
 /// Errors that can occur when binding a variable
 ///
-#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug)]
 pub enum BindingError {
     /// The requested variable name is already in use
     AlreadyInUse,
@@ -365,7 +365,7 @@ mod test {
         let empty_environment   = EmptyEnvironment::new();
         let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
-        binding.allocate_variable("test");
+        binding.allocate_variable("test").unwrap();
         assert!(match binding.lookup("test") { BindingResult::Variable(0) => true, _ => false });
 
         {
@@ -381,8 +381,8 @@ mod test {
         let empty_environment   = EmptyEnvironment::new();
         let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
-        binding.allocate_variable("test1");
-        binding.allocate_variable("test2");
+        binding.allocate_variable("test1").unwrap();
+        binding.allocate_variable("test2").unwrap();
         assert!(match binding.lookup("test1") { BindingResult::Variable(0) => true, _ => false });
         assert!(match binding.lookup("test2") { BindingResult::Variable(1) => true, _ => false });
 
@@ -420,7 +420,7 @@ mod test {
         let empty_environment   = EmptyEnvironment::new();
         let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
-        binding.allocate_variable("test");
+        binding.allocate_variable("test").unwrap();
         
         assert!(match binding.lookup("test") { BindingResult::Variable(v) => v == 0, _ => false });
     }
@@ -430,9 +430,9 @@ mod test {
         let empty_environment   = EmptyEnvironment::new();
         let mut binding         = BindingEnvironment::from_environment(&empty_environment);
 
-        binding.allocate_variable("test1");
-        binding.allocate_variable("test2");
-        binding.allocate_variable("test3");
+        binding.allocate_variable("test1").unwrap();
+        binding.allocate_variable("test2").unwrap();
+        binding.allocate_variable("test3").unwrap();
         
         assert!(match binding.lookup("test1") { BindingResult::Variable(v) => v == 0, _ => false });
         assert!(match binding.lookup("test2") { BindingResult::Variable(v) => v == 1, _ => false });
@@ -444,7 +444,7 @@ mod test {
         let tool_environment = DynamicEnvironment::new();
         tool_environment.define("test", Box::new(make_pure_tool(|_: ()| "Success")));
 
-        let mut binding = BindingEnvironment::from_environment(&tool_environment);
+        let binding = BindingEnvironment::from_environment(&tool_environment);
         
         assert!(match binding.lookup("test") { BindingResult::Tool(_) => true, _ => false });
     }
@@ -456,7 +456,7 @@ mod test {
 
         let mut binding = BindingEnvironment::from_environment(&tool_environment);
 
-        binding.allocate_variable("test");
+        binding.allocate_variable("test").unwrap();
         
         assert!(match binding.lookup("test") { BindingResult::Variable(v) => v == 0, _ => false });
     }

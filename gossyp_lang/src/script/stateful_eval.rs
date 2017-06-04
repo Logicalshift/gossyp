@@ -98,7 +98,6 @@ pub fn create_evaluator_with_state_tool(eval_name: String, environment: &Environ
 #[cfg(test)]
 mod test {
     use super::*;
-    use gossyp_base::basic::*;
 
     #[test]
     fn can_bind_variable_using_stateful_tool() {
