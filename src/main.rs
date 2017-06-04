@@ -22,6 +22,10 @@ fn main() {
     let print_string = main_env.get_typed_tool::<String, ()>("print").unwrap();
     print_string.invoke(format!("{} {} by {}\n", env!("CARGO_PKG_NAME"),  env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_AUTHORS")), &main_env).unwrap();
 
+    // Create some state, replacing the default eval tool with one that tracks state
+    let create_evaluator = main_env.get_typed_tool::<&str, ()>(CREATE_EVALUATOR_WITH_STATE).unwrap();
+    create_evaluator.invoke(EVAL_SCRIPT, &main_env).unwrap();
+
     // Start a REPL
     loop {
         let print_string    = main_env.get_typed_tool::<String, ()>(PRINT).unwrap();
