@@ -33,15 +33,24 @@ pub enum BindingResult {
 /// A binding environment can be used to allocate variable values that will be used
 /// during execution of a script.
 ///
-struct BaseBindingEnvironment<'a> {
-    /// The external environment that contains tools we can bind to
-    environment: Option<&'a Environment>,
-
+pub struct VariableBindingEnvironment {
     /// The next variable value that will be alllocated
     next_to_allocate: u32,
 
     /// The current set of binding allocations
     bindings: HashMap<String, u32>
+}
+
+///
+/// An external environment binding environment can be used to look up tools found
+/// in an Environment object
+///
+struct ExternalEnvironmentBindingEnvironment<'a> {
+    /// Where to look up variables
+    variable_environment: VariableBindingEnvironment,
+
+    /// The environment to look things up in
+    environment: &'a Environment
 }
 
 ///
@@ -93,9 +102,8 @@ impl BindingEnvironment {
     ///
     /// Creates a new binding environment. New variables will be mapped from 0
     ///
-    pub fn new() -> Box<BindingEnvironment> {
-        Box::new(BaseBindingEnvironment { 
-            environment:        None, 
+    pub fn new() -> Box<VariableBindingEnvironment> {
+        Box::new(VariableBindingEnvironment { 
             next_to_allocate:   0, 
             bindings:           HashMap::new() 
         })
@@ -105,11 +113,17 @@ impl BindingEnvironment {
     /// Creates a new binding environment which will fetch tools from an outside environment
     ///
     pub fn from_environment<'a>(environment: &'a Environment) -> Box<BindingEnvironment+'a> {
-        Box::new(BaseBindingEnvironment { 
-            environment:        Some(environment), 
+        let variable_environment = VariableBindingEnvironment { 
             next_to_allocate:   0, 
             bindings:           HashMap::new() 
-        })
+        };
+
+        let external_environment = ExternalEnvironmentBindingEnvironment { 
+            variable_environment:   variable_environment,
+            environment:            environment 
+        };
+
+        Box::new(external_environment)
     }
 
     ///
@@ -123,7 +137,7 @@ impl BindingEnvironment {
     }
 }
 
-impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
+impl BindingEnvironment for VariableBindingEnvironment {
     ///
     /// Creates a new sub-environment, where new variable names can be a
     ///
@@ -169,15 +183,7 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
             // Try to retrieve as a variable directly from this environment
             BindingResult::Variable(*variable)
         } else {
-            // Try to retrieve from the environment
-            let tool_or_error = self.environment
-                .map(|environment| environment.get_json_tool(name))
-                .unwrap_or(Err(RetrieveToolError::not_found()));
-
-            match tool_or_error {
-                Ok(tool)    => BindingResult::Tool(tool),
-                Err(error)  => BindingResult::Error(error)
-            }
+            BindingResult::Error(RetrieveToolError::not_found())
         }
     }
 
@@ -186,6 +192,42 @@ impl<'a> BindingEnvironment for BaseBindingEnvironment<'a> {
     ///
     fn get_number_of_variables(&self) -> u32 {
         self.next_to_allocate
+    }
+}
+
+impl<'a> BindingEnvironment for ExternalEnvironmentBindingEnvironment<'a> {
+    fn allocate_location(&mut self) -> u32 {
+        self.variable_environment.allocate_location()
+    }
+
+    fn allocate_variable(&mut self, name: &str) -> Result<u32, BindingError> {
+        self.variable_environment.allocate_variable(name)
+    }
+
+    fn lookup(&self, name: &str) -> BindingResult {
+        let variable_result = self.variable_environment.lookup(name);
+
+        match variable_result {
+            BindingResult::Error(_) => {
+                let tool = self.environment.get_json_tool(name);
+
+                tool.map(|tool| BindingResult::Tool(tool))
+                    .unwrap_or_else(|err| BindingResult::Error(err))
+            },
+
+            found => found,
+        }
+    }
+
+    fn get_number_of_variables(&self) -> u32 {
+        self.variable_environment.get_number_of_variables()
+    }
+
+    fn create_sub_environment<'b>(&'b mut self) -> Box<BindingEnvironment + 'b> {
+        Box::new(ChildBindingEnvironment {
+            base_environment:   self,
+            bindings:           HashMap::new()
+        })
     }
 }
 

@@ -1,7 +1,7 @@
 use std::sync::{Mutex, Arc};
 use std::result::Result;
+use std::error::Error;
 
-use serde::*;
 use serde_json::*;
 use gossyp_base::*;
 
@@ -18,7 +18,7 @@ use super::bound_script::*;
 ///
 #[derive(Clone)]
 pub struct StatefulEvalTool {
-    binding:    Arc<Mutex<Box<BindingEnvironment>>>,
+    binding:    Arc<Mutex<Box<VariableBindingEnvironment>>>,
     execution:  Arc<Mutex<ScriptExecutionEnvironment>>
 }
 
@@ -61,13 +61,21 @@ impl StatefulEvalTool {
 impl Tool for StatefulEvalTool {
     fn invoke_json(&self, input: Value, environment: &Environment) -> Result<Value, Value> {
         let script = from_value::<Script>(input);
-        self.evaluate_unbound_statement(script, environment)
+
+        match script {
+            Ok(script)          => self.evaluate_unbound_statement(&script, environment),
+            Err(script_error)   => Err(json![{
+                "error":        "JSON input decode failed",
+                "description":  script_error.description(),
+            }])
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use gossyp_base::basic::*;
 
     #[test]
     fn can_bind_variable_using_stateful_tool() {
