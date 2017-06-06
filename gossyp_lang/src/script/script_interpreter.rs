@@ -60,7 +60,13 @@ pub enum ScriptEvaluationError {
     FieldMustBeIdentifier,
 
     /// Tried to declare a new variable with let or var which is already in use
-    VariableNameAlreadyInUse
+    VariableNameAlreadyInUse,
+
+    /// Found the name of a tool where the name of a variable was expected
+    WasExpectingAVariable,
+
+    /// Named variable was not found
+    VariableNameNotFound
 }
 
 impl InterpretedScriptTool {

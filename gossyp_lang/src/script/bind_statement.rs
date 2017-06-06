@@ -44,15 +44,29 @@ fn bind_variable_name(name: &ScriptToken, script: &Script, binding_environment: 
 }
 
 ///
+/// Retrieves an existing variable name
+///
+fn get_variable_name(name: &ScriptToken, script: &Script, binding_environment: &mut BindingEnvironment) -> Result<u32, Value> {
+    let binding = binding_environment.lookup(&name.matched);
+    
+    match binding {
+        BindingResult::Variable(value)  => Ok(value),
+        BindingResult::Tool(_)          => Err(generate_statement_error(ScriptEvaluationError::WasExpectingAVariable, script)),
+        BindingResult::Error(_)         => Err(generate_statement_error(ScriptEvaluationError::VariableNameNotFound, script))
+    }
+}
+
+///
 /// Binds a statement to an environment (does not allocate space for variables)
 ///
 fn bind_statement_without_allocation(script: &Script, binding_environment: &mut BindingEnvironment) -> Result<BoundScript, Value> {
     use self::BoundScript::*;
 
     match *script {
-        Script::RunCommand(ref expr)    => Ok(RunCommand(bind_expression(expr, binding_environment)?)),
-        Script::Sequence(ref parts)     => Ok(Sequence(bind_sequence(parts, binding_environment)?)),
-        Script::Var(ref name, ref expr) => Ok(Var(bind_variable_name(name, script, binding_environment)?, bind_expression(expr, binding_environment)?, name.clone())),
+        Script::RunCommand(ref expr)        => Ok(RunCommand(bind_expression(expr, binding_environment)?)),
+        Script::Sequence(ref parts)         => Ok(Sequence(bind_sequence(parts, binding_environment)?)),
+        Script::Var(ref name, ref expr)     => Ok(Var(bind_variable_name(name, script, binding_environment)?, bind_expression(expr, binding_environment)?, name.clone())),
+        Script::Assign(ref name, ref expr)  => Ok(Assign(get_variable_name(name, script, binding_environment)?, bind_expression(expr, binding_environment)?, name.clone())),
 
         _ => unimplemented!()
     }
@@ -121,5 +135,19 @@ mod test {
         } else {
             assert!(false);
         }
+    }
+    
+    #[test]
+    fn can_bind_assign_expression() {
+        let assign_statement    = Script::Assign(ScriptToken::identifier("test"), Expression::number("42"));
+        let empty_environment   = EmptyEnvironment::new();
+        let mut env             = BindingEnvironment::from_environment(&empty_environment);
+
+        assert!(env.allocate_variable("test") == Ok(0));
+
+        let bound               = bind_statement(&assign_statement, &mut *env);
+
+        assert!(bound.is_ok());
+        assert!(match bound { Ok(BoundScript::Assign(0, BoundExpression::Value(_, _), _)) => true, _ => false });
     }
 }
