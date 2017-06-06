@@ -147,10 +147,16 @@ impl<'a> ParseState<'a> {
             // for identifier in expression { statements }
             self.parse_for()
 
-        } else if self.lookahead_is(ScriptLexerToken::Identifier) {
-            // While commands are either <Expression> or <Expression> <Expression>, we
-            // force the first expression to be an identifier at the moment
-            self.parse_command()
+        } else if let Some(identifier) = self.accept(ScriptLexerToken::Identifier) {
+            // Could be Identifier '=' x to be an assignment
+            if self.accept(ScriptLexerToken::symbol("=")).is_some() {
+                // x = y
+                Ok(Script::Assign(identifier.clone(), self.parse_expression()?))
+            } else {
+                // While commands are either <Expression> or <Expression> <Expression>, we
+                // force the first expression to be an identifier at the moment
+                self.parse_command(identifier)
+            }
 
         } else {
             // Unrecognised token
@@ -163,9 +169,12 @@ impl<'a> ParseState<'a> {
     ///
     /// Syntax '<expression>', '<expression> <expression>'
     ///
-    fn parse_command(&mut self) -> Result<Script, ParseError> {
+    fn parse_command(&mut self, initial_identifier: &ScriptToken) -> Result<Script, ParseError> {
+        // Turn the initial identifier into an expression
+        let identifier_expr = Expression::Identifier(initial_identifier.clone());
+
         // Starts with an expression specifying the command to run
-        self.parse_expression().and_then(move |command_expression| {
+        self.parse_expression_rhs(identifier_expr).and_then(move |command_expression| {
             // Followed by arguments (or an end-of-expression marker)
             if self.accept(ScriptLexerToken::Newline).is_some()
                || self.lookahead_is(ScriptLexerToken::EndOfFile) {
@@ -559,6 +568,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::Var(_, Expression::Identifier(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_assignment() {
+        let statement   = "foo = bar";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::Assign(_, Expression::Identifier(_)) => true, _ => false});
     }
 
     #[test]
