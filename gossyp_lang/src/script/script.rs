@@ -135,6 +135,9 @@ pub enum Script {
     /// a = b
     Assign(ScriptToken, Expression),
 
+    /// if expr { stuff } (else { stuff })
+    If(Expression, Box<Script>, Option<Box<Script>>),
+
     /// loop { stuff }
     Loop(Box<Script>),
 
