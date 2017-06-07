@@ -178,6 +178,7 @@ impl<'a> ParseState<'a> {
         self.parse_expression_rhs(identifier_expr).and_then(move |command_expression| {
             // Followed by arguments (or an end-of-expression marker)
             if self.accept(ScriptLexerToken::Newline).is_some()
+               || self.lookahead_is(ScriptLexerToken::symbol("}"))
                || self.lookahead_is(ScriptLexerToken::EndOfFile) {
                 // Newline or EOF ends a command
                 Ok(Script::RunCommand(command_expression))
@@ -578,7 +579,6 @@ mod test {
         let statement   = "if foo { bar }";
         let parsed      = parse(statement);
 
-        println!("{:?}", parsed);
         assert!(parsed.is_ok());
 
         let result = parsed.unwrap();
