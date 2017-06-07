@@ -11,7 +11,8 @@ use super::script::*;
 ///
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ParseError {
-    pub message: String
+    pub message: String,
+    pub remaining: Vec<ScriptToken>
 }
 
 ///
@@ -21,8 +22,8 @@ pub struct ParseScriptTool {
 }
 
 impl ParseError {
-    fn new<'a>(_state: &ParseState<'a>, message: &str) -> ParseError {
-        ParseError { message: String::from(message) }
+    fn new<'a>(state: &ParseState<'a>, message: &str) -> ParseError {
+        ParseError { message: String::from(message), remaining: state.remaining.to_vec() }
     }
 }
 
@@ -577,6 +578,7 @@ mod test {
         let statement   = "if foo { bar }";
         let parsed      = parse(statement);
 
+        println!("{:?}", parsed);
         assert!(parsed.is_ok());
 
         let result = parsed.unwrap();
