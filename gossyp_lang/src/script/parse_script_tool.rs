@@ -439,7 +439,23 @@ impl<'a> ParseState<'a> {
     }
 
     fn parse_if(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        // if expr { statement }
+        let condition = self.parse_expression()?;
+
+        if self.accept(ScriptLexerToken::symbol("{")).is_some() {
+            let statement = self.parse_statement()?;
+
+            if self.accept(ScriptLexerToken::symbol("}")).is_some() {
+                // Finished if statement (an else could be on the lookahead)
+                Ok(Script::If(condition, Box::new(statement), None))
+            } else {
+                // Block should be finished
+                Err(ParseError::new(self, "Missing '}'"))
+            }
+        } else {
+            // Should be a statement
+            Err(ParseError::new(self, "Was expecting '{'"))
+        }
     }
 
     fn parse_using(&mut self) -> Result<Script, ParseError> {
@@ -554,6 +570,34 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::Let(_, Expression::Identifier(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_if_statement() {
+        let statement   = "if foo { bar }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::If(Expression::Identifier(_), _, None) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_if_else_statement() {
+        let statement   = "if foo { bar } else { baz }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::If(Expression::Identifier(_), _, Some(_)) => true, _ => false});
     }
 
     #[test]
