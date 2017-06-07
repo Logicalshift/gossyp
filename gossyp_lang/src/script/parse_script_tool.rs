@@ -442,20 +442,32 @@ impl<'a> ParseState<'a> {
 
     fn parse_if(&mut self) -> Result<Script, ParseError> {
         // if expr { statement }
-        let condition = self.parse_expression()?;
+        let condition   = self.parse_expression()?;
+        let block       = self.parse_statement_block()?;
 
+        if self.accept(ScriptLexerToken::Else).is_some() {
+            let else_block = self.parse_statement_block()?;
+
+            Ok(Script::If(condition, Box::new(block), Some(Box::new(else_block))))
+        } else {
+            Ok(Script::If(condition, Box::new(block), None))
+        }
+    }
+
+    fn parse_statement_block(&mut self) -> Result<Script, ParseError> {
         if self.accept(ScriptLexerToken::symbol("{")).is_some() {
-            let statement = self.parse_statement()?;
+            let mut block = vec![];
 
-            if self.accept(ScriptLexerToken::symbol("}")).is_some() {
-                // Finished if statement (an else could be on the lookahead)
-                Ok(Script::If(condition, Box::new(statement), None))
+            while self.accept(ScriptLexerToken::symbol("}")).is_none() {
+                block.push(self.parse_statement()?)
+            }
+
+            if block.len() == 1 {
+                Ok(block[0].clone())
             } else {
-                // Block should be finished
-                Err(ParseError::new(self, "Missing '}'"))
+                Ok(Script::Sequence(block))
             }
         } else {
-            // Should be a statement
             Err(ParseError::new(self, "Was expecting '{'"))
         }
     }
@@ -577,6 +589,20 @@ mod test {
     #[test]
     fn can_parse_if_statement() {
         let statement   = "if foo { bar }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::If(Expression::Identifier(_), _, None) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_multi_line_if_statement() {
+        let statement   = "if foo {\nbar\nbaz\n}";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());

@@ -12,6 +12,10 @@
         "match_rule":  "if"
     },
     {
+        "symbol_name": "else",
+        "match_rule":  "else"
+    },
+    {
         "symbol_name": "using",
         "match_rule":  "using"
     },
