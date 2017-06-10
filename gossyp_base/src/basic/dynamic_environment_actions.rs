@@ -1,5 +1,6 @@
 use std::result::Result;
 
+use serde::*;
 use serde_json::*;
 
 use super::super::tool::*;
@@ -64,6 +65,22 @@ pub fn undefine_tool(environment: &Environment, old_tool_name: &str) -> Result<b
     Ok(undefine_tool.invoke(UndefineToolInput::new(old_tool_name), environment)?)
 }
 
+///
+/// Defines a new tool from a function that doesn't produce errors in this environment
+///
+pub fn define_pure_tool<TIn: 'static, TOut: 'static+Serialize, F: 'static+Send+Sync+Fn(TIn) -> TOut>(environment: &Environment, new_tool_name: &str, function: F) -> Result<(), Value> 
+where for<'de> TIn: Deserialize<'de> {
+    define_new_tool(environment, new_tool_name, Box::new(make_pure_tool(function)))
+}
+
+///
+/// Defines a new tool from a function that can produce errors in this environment
+///
+pub fn define_dynamic_tool<TIn: 'static, TOut: 'static+Serialize, TErr: 'static+Serialize, F: 'static+Send+Sync+Fn(TIn, &Environment) -> Result<TOut, TErr>>(environment: &Environment, new_tool_name: &str, function: F) -> Result<(), Value>
+where for<'de> TIn: Deserialize<'de> {
+    define_new_tool(environment, new_tool_name, Box::new(make_dynamic_tool(function)))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -75,6 +92,24 @@ mod test {
 
         assert!(env.get_json_tool("test").is_err());
         assert!(define_new_tool(&env, "test", Box::new(new_tool)).is_ok());
+        assert!(env.get_json_tool("test").is_ok());
+    }
+
+    #[test]
+    fn can_define_pure_tool_using_convenience_function() {
+        let env      = DynamicEnvironment::new();
+
+        assert!(env.get_json_tool("test").is_err());
+        assert!(define_pure_tool(&env, "test", |x: i32| x+1).is_ok());
+        assert!(env.get_json_tool("test").is_ok());
+    }
+
+    #[test]
+    fn can_define_dynamic_tool_using_convenience_function() {
+        let env      = DynamicEnvironment::new();
+
+        assert!(env.get_json_tool("test").is_err());
+        assert!(define_dynamic_tool(&env, "test", |x: i32, _env| if x > 0 { Ok(x-1) } else { Err(false) }).is_ok());
         assert!(env.get_json_tool("test").is_ok());
     }
 
