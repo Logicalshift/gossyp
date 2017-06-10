@@ -251,17 +251,17 @@ impl<'a> ParseState<'a> {
 
         } else if self.accept(ScriptLexerToken::symbol("[")).is_some() {
             // a[b] indexing
-            let right_expr = self.parse_expression();
+            let right_expr = self.parse_expression()?;
 
-            right_expr.and_then(|right_expr| {
-                if self.accept(ScriptLexerToken::symbol("]")).is_some() {
-                    // Got all of a[b]
-                    Ok(Expression::Index(Box::new((left_expr, right_expr))))
-                } else {
-                    // Missing ']'
-                    Err(ParseError::new(self, "Missing ']'"))
-                }
-            })
+            if self.accept(ScriptLexerToken::symbol("]")).is_some() {
+                // Got all of a[b]
+                let array_expr = Expression::Index(Box::new((left_expr, right_expr)));
+
+                Ok(self.parse_expression_rhs(array_expr)?)
+            } else {
+                // Missing ']'
+                Err(ParseError::new(self, "Missing ']'"))
+            }
 
         } else if self.lookahead_is(ScriptLexerToken::symbol("(")) {
             // a(b) = 'call command a with parameters b'
@@ -733,6 +733,20 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::RunCommand(Expression::Index(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_array_indexing_with_field_access() {
+        let statement   = "some-command[0].foo";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_)) => true, _ => false});
     }
 
     #[test]
