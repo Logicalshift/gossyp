@@ -749,7 +749,13 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_)) => true, _ => false});
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(ref field_box)) => {
+                match **field_box {
+                    (Expression::Identifier(_), Expression::Apply(_)) => true,
+                    _ => false
+                }
+            },
+            _ => false});
     }
 
     #[test]
