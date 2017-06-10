@@ -3,6 +3,7 @@ use std::result::Result;
 use serde_json::*;
 
 use gossyp_base::*;
+use gossyp_base::basic::*;
 use super::script::*;
 use super::bound_script::*;
 use super::binding_environment::*;
@@ -82,7 +83,13 @@ pub fn evaluate_expression_to_tool<'a>(expression: &'a BoundExpression) -> Resul
 /// Calls an expression representing a tool and calls it with the specified parameters
 ///
 pub fn call_tool(tool: &Box<Tool>, parameters: Value, environment: &Environment) -> Result<Value, Value> {
-    tool.invoke_json(parameters, environment)
+    // Tools are given their own environment (so that if they define new things they don't pollute the 'main' environment)
+    let tool_environment = DynamicEnvironment::new();
+
+    // TODO: combine with the environment that was passed in
+
+    // Call the tool
+    tool.invoke_json(parameters, &tool_environment)
 }
 
 ///
