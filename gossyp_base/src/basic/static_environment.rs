@@ -10,7 +10,6 @@ use serde_json::*;
 use super::super::tool::*;
 use super::super::environment::*;
 use super::toolset::*;
-use super::basic_toolset::*;
 
 ///
 /// A static environment just contains a fixed set of tools
@@ -68,12 +67,12 @@ impl StaticEnvironment {
     ///
     /// Creates a new static environment containing a single tool
     ///
-    pub fn from_tool<T: Tool+'static>(tool_name: &str, tool: T, environment: &Environment) -> StaticEnvironment {
-        // Create a toolset containing this tool
-        let single_toolset = BasicToolSet::from(vec![ (String::from(tool_name), tool) ]);
+    pub fn from_tool(tool_name: &str, tool: Box<Tool>) -> StaticEnvironment {
+        let mut tool_hash   = HashMap::new();
 
-        // Pass through to from_toolset
-        StaticEnvironment::from_toolset(single_toolset, environment)
+        tool_hash.insert(String::from(tool_name), Arc::new(tool));
+
+        StaticEnvironment { tools: tool_hash }
     }
 }
 
@@ -82,6 +81,7 @@ mod test {
     use super::*;
     use super::super::functional_tool::*;
     use super::super::empty_environment::*;
+    use super::super::basic_toolset::*;
 
     #[test]
     fn can_get_tool_by_name() {

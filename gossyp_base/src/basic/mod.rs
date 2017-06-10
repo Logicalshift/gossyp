@@ -8,6 +8,7 @@ pub mod dynamic_environment;
 pub mod combined_environment;
 pub mod tool_name;
 pub mod list_tools;
+pub mod dynamic_environment_actions;
 
 pub use self::functional_tool::*;
 pub use self::toolset::*;
@@ -18,3 +19,4 @@ pub use self::static_environment::*;
 pub use self::dynamic_environment::*;
 pub use self::list_tools::*;
 pub use self::combined_environment::*;
+pub use self::dynamic_environment_actions::*;
