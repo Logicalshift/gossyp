@@ -122,6 +122,7 @@ pub fn evaluate_unbound_statement(statement: &Script, environment: &Environment,
 mod test {
     use gossyp_base::basic::*;
     use super::*;
+    use super::super::evaluate::*;
 
     #[test]
     fn can_execute_run_command() {
@@ -152,5 +153,30 @@ mod test {
             Value::String(String::from("test 1")),
             Value::String(String::from("test 2"))
         ])));
+    }
+
+    #[test]
+    fn commands_have_own_environment() {
+        let environment = DynamicEnvironment::new();
+
+        // Tool that defines a new tool in its environment
+        assert!(define_dynamic_tool(&environment, "make_tool", |_: (), env| define_pure_tool(env, "subtool", |_: ()| ())).is_ok());
+
+        // Tools should get their own sub-environment so the new tool should not 'escape'. Need to do make_tool().subtool() to call the subtool
+        assert!(gossyp_eval("subtool", &environment).is_err());
+        assert!(gossyp_eval("make_tool", &environment).is_ok());
+        assert!(gossyp_eval("subtool", &environment).is_err());
+    }
+
+    #[test]
+    fn can_call_subtools() {
+        let environment = DynamicEnvironment::new();
+
+        // Tool that defines a new tool in its environment
+        assert!(define_dynamic_tool(&environment, "make_tool", |_: (), env| define_pure_tool(env, "subtool", |_: ()| ())).is_ok());
+
+        let subtool_result = gossyp_eval("make_tool().subtool()", &environment);
+        if !subtool_result.is_ok() { println!("{:?}", subtool_result); }
+        assert!(subtool_result.is_ok());
     }
 }
