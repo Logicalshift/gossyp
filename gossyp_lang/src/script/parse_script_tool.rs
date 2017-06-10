@@ -265,9 +265,12 @@ impl<'a> ParseState<'a> {
 
         } else if self.lookahead_is(ScriptLexerToken::symbol("(")) {
             // a(b) = 'call command a with parameters b'
-            self.parse_expression().map(|parameters| {
-                Expression::Apply(Box::new((left_expr, parameters)))
-            })
+            let parameters  = self.parse_array_expression(ScriptLexerToken::symbol("("), ScriptLexerToken::symbol(")"))?;
+            let tuple       = if parameters.len() == 1 { parameters[0].clone() } else { Expression::Tuple(parameters) };
+            let apply_expr  = Expression::Apply(Box::new((left_expr, tuple)));
+
+            // Can be a further RHS after this
+            Ok(self.parse_expression_rhs(apply_expr)?)
 
         } else {
             Ok(left_expr)
@@ -679,6 +682,34 @@ mod test {
     #[test]
     fn can_parse_field_access() {
         let statement   = "some-command.some-field";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_field_command() {
+        let statement   = "some-command.some-defined-command()";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_)) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_field_command_with_more_complex_syntax() {
+        let statement   = "some-command().some-defined-command()";
         let parsed      = parse(statement);
 
         assert!(parsed.is_ok());
