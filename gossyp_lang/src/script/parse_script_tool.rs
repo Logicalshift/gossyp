@@ -245,11 +245,30 @@ impl<'a> ParseState<'a> {
     fn parse_expression_rhs(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
         if self.accept(ScriptLexerToken::symbol(".")).is_some() {
             // 'a.b' field access
-            let right_expr = self.parse_expression();
+            let right_expr = self.parse_simple_expression()?;
+            
+            if self.lookahead_is(ScriptLexerToken::symbol(".")) {
+                // If we've got an a.b.c expression, return as '(a.b).c'
+                let field_access = Expression::FieldAccess(Box::new((left_expr, right_expr)));
+                Ok(self.parse_expression_rhs(field_access)?)
+            } else {
+                // Other expression types associate like 'a.(b())' and not '(a.b)()'
+                let right_expr_2 = self.parse_expression_rhs_not_field(right_expr)?;
+                let field_access = Expression::FieldAccess(Box::new((left_expr, right_expr_2)));
+                Ok(self.parse_expression_rhs(field_access)?)
+            }
 
-            right_expr.map(|right_expr| Expression::FieldAccess(Box::new((left_expr, right_expr))))
+        } else {
+            // Other kinds of RHS
+            self.parse_expression_rhs_not_field(left_expr)
+        }
+    }
 
-        } else if self.accept(ScriptLexerToken::symbol("[")).is_some() {
+    ///
+    /// Parses the RHS of an expression, except for 'a.b'
+    ///
+    fn parse_expression_rhs_not_field(&mut self, left_expr: Expression) -> Result<Expression, ParseError> {
+        if self.accept(ScriptLexerToken::symbol("[")).is_some() {
             // a[b] indexing
             let right_expr = self.parse_expression()?;
 
