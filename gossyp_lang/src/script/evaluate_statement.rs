@@ -168,6 +168,23 @@ mod test {
         assert!(gossyp_eval("subtool", &environment).is_err());
     }
 
+    #[test]
+    fn commands_can_access_parent_environment() {
+        let environment = DynamicEnvironment::new();
+
+        // Tool that defines a new tool in its environment
+        assert!(define_pure_tool(&environment, "one", |_: ()| 1).is_ok());
+        assert!(define_dynamic_tool(&environment, "call_one", |_: (), env| -> Result<Value, Value> {
+            Ok(env.get_json_tool("one")
+                  .map_err(|_| json![ "Couldn't find tool" ])?
+                  .invoke_json(Value::Null, env)?)
+            }).is_ok());
+
+        // Tools should get their own sub-environment so the new tool should not 'escape'. Need to do make_tool().subtool() to call the subtool
+        assert!(gossyp_eval("one", &environment).is_ok());
+        assert!(gossyp_eval("call_one", &environment).map_err(|x| { println!("{:?}", x); x }).is_ok());
+    }
+
     /*
     #[test]
     fn can_call_subtools() {
