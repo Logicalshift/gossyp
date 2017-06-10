@@ -690,7 +690,33 @@ mod test {
         assert!(result.len() == 1);
 
         let ref cmd = result[0];
-        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(_)) => true, _ => false});
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(ref field_box)) => {
+                match **field_box {
+                    (Expression::Identifier(_), Expression::Identifier(_)) => true,
+                    _ => false
+                }
+            },
+            _ => false});
+    }
+
+    #[test]
+    fn can_parse_deep_field_access() {
+        let statement   = "some-command.some-field.blah.blah";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::RunCommand(Expression::FieldAccess(ref field_box)) => {
+                match **field_box {
+                    (Expression::FieldAccess(_), Expression::Identifier(_)) => true,
+                    _ => false
+                }
+            },
+            _ => false});
     }
 
     #[test]
