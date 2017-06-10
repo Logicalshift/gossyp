@@ -455,6 +455,7 @@ impl<'a> ParseState<'a> {
     }
 
     fn parse_statement_block(&mut self) -> Result<Script, ParseError> {
+        // { statements }
         if self.accept(ScriptLexerToken::symbol("{")).is_some() {
             let mut block = vec![];
 
@@ -473,7 +474,11 @@ impl<'a> ParseState<'a> {
     }
 
     fn parse_using(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        // using expr { statements }
+        let using = self.parse_expression()?;
+        let block = self.parse_statement_block()?;
+
+        Ok(Script::Using(using, Box::new(block)))
     }
 
     fn parse_while(&mut self) -> Result<Script, ParseError> {
@@ -917,5 +922,19 @@ mod test {
 
         assert!(parsed.is_ok());
         assert!(parsed.unwrap().len() == 2);
+    }
+
+    #[test]
+    fn can_parse_using_statement() {
+        let statement   = "using foo { bar }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::Using(Expression::Identifier(_), _) => true, _ => false});
     }
 }
