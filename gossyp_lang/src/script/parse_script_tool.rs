@@ -475,18 +475,25 @@ impl<'a> ParseState<'a> {
 
     fn parse_using(&mut self) -> Result<Script, ParseError> {
         // using expr { statements }
-        let using = self.parse_expression()?;
-        let block = self.parse_statement_block()?;
+        let using_expr  = self.parse_expression()?;
+        let block       = self.parse_statement_block()?;
 
-        Ok(Script::Using(using, Box::new(block)))
+        Ok(Script::Using(using_expr, Box::new(block)))
     }
 
     fn parse_while(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        // while expr { statements }
+        let while_expr  = self.parse_expression()?;
+        let block       = self.parse_statement_block()?;
+
+        Ok(Script::While(while_expr, Box::new(block)))
     }
 
     fn parse_loop(&mut self) -> Result<Script, ParseError> {
-        unimplemented!()
+        // loop { statements }
+        let block       = self.parse_statement_block()?;
+
+        Ok(Script::Loop(Box::new(block)))
     }
 
     fn parse_for(&mut self) -> Result<Script, ParseError> {
@@ -936,5 +943,33 @@ mod test {
 
         let ref cmd = result[0];
         assert!(match cmd { &Script::Using(Expression::Identifier(_), _) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_while_statement() {
+        let statement   = "while foo { bar }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::While(Expression::Identifier(_), _) => true, _ => false});
+    }
+
+    #[test]
+    fn can_parse_loop_statement() {
+        let statement   = "loop { bar }";
+        let parsed      = parse(statement);
+
+        assert!(parsed.is_ok());
+
+        let result = parsed.unwrap();
+        assert!(result.len() == 1);
+
+        let ref cmd = result[0];
+        assert!(match cmd { &Script::Loop(_) => true, _ => false});
     }
 }
