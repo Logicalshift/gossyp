@@ -86,10 +86,11 @@ pub fn call_tool(tool: &Box<Tool>, parameters: Value, environment: &Environment)
     // Tools are given their own environment (so that if they define new things they don't pollute the 'main' environment)
     let tool_environment = DynamicEnvironment::new();
 
-    // TODO: combine with the environment that was passed in
+    // Combine with the environment that was passed in
+    let combined_environment = CombinedEnvironment::from_environments(vec![&tool_environment, environment]);
 
     // Call the tool
-    tool.invoke_json(parameters, &tool_environment)
+    tool.invoke_json(parameters, &combined_environment)
 }
 
 ///
