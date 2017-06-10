@@ -10,6 +10,7 @@ pub mod bind_statement;
 pub mod evaluate_statement;
 pub mod evaluate_expression;
 pub mod tool;
+pub mod evaluate;
 
 use self::lex_script_tool::*;
 use self::parse_script_tool::*;
@@ -17,6 +18,8 @@ use self::script_interpreter::*;
 use self::stateful_eval::*;
 use gossyp_base::*;
 use gossyp_base::basic::*;
+
+pub use self::evaluate::*;
 
 ///
 /// ToolSet for dealing with the scripting language
